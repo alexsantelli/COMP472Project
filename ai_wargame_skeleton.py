@@ -315,7 +315,7 @@ class Game:
 
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
-        print("[Enter is_valid_move def]")
+        #print("[Enter is_valid_move def]")
 
         #Checking if inside coordinate map for the 2nd time as it's already occuring in the Read_me
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
@@ -330,19 +330,28 @@ class Game:
         print("-Passed 2nd IF statement - Correct player moved")
         coordinate_Destination = self.get(coords.dst)
         #Normal move
-        if coordinate_Destination is None:
-            print("-Passed 3nd IF statement - Coordinate destination is empty")
-            return True
+        if coordinate_Destination is not None:
+            print("-Failed 3nd IF statement - Coordinate destination is not empty")
+            return False
         
         # Check if the move is allowed based on the rules
-        src_type = coordinate_Source.type
+        Coord_src_type = coordinate_Source.type
         dst_coord = coords.dst
+        print("Source type: ",  Coord_src_type)
+        print("Dest Coord: ",  dst_coord)
 
-        if src_type in [UnitType.AI, UnitType.Firewall, UnitType.Program]:
+        if Coord_src_type in [UnitType.AI, UnitType.Firewall, UnitType.Program]:
+            print("Source type: ",  Coord_src_type)
+            print("Dest Coord: ",  dst_coord)
             if dst_coord.row > coords.src.row or dst_coord.col > coords.src.col:
                 return False
+        
+        unit1_tech_abs = abs(dst_coord.row - coords.src.row)
+        unit2_tech_abs = abs(dst_coord.col - coords.src.col)
+        print("unit abs 1:", unit1_tech_abs)
+        print("unit abs 2:", unit2_tech_abs)
+        if Coord_src_type == UnitType.Tech:
 
-        if src_type == UnitType.Tech:
             if abs(dst_coord.row - coords.src.row) > 1 or abs(dst_coord.col - coords.src.col) > 1:
                 return False
 
@@ -397,7 +406,7 @@ class Game:
     
     def is_valid_coord(self, coord: Coord) -> bool:
         """Check if a Coord is valid within out board dimensions."""
-        print("[Enter is_valid_coord def]")
+        #print("[Enter is_valid_coord def]")
         dim = self.options.dim
         if coord.row < 0 or coord.row >= dim or coord.col < 0 or coord.col >= dim:
             return False
