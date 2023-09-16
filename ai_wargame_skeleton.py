@@ -309,6 +309,9 @@ class Game:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
+
+
+
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         #Checking if inside coordinate map
@@ -319,7 +322,7 @@ class Game:
         if unit1 is None or unit1.player != self.next_player:
             return False
         unit2 = self.get(coords.dst)
-        #Normal move
+        #Normal move, checks if space is empty for unit to move to
         if unit2 is None:
             return True
         #Attack or Repair or incorrect move
@@ -327,11 +330,11 @@ class Game:
             src_unit_type = self.get(coords.src).type.name
             dst_unit_type = self.get(coords.dst).type.name
             #Check if its attack (two adjacent players are opposing)
-            if unit1.player != unit2.player:
+            if unit1.player.name != unit2.player.name:
                 return True
-            #check if the repair is valid
-            elif (src_unit_type == "AI" and dst_unit_type == "Virus") or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
+            if (src_unit_type == "AI" and dst_unit_type == "Virus" ) or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
                 return True
+            #add self destruct
             else:
                 return False
             
@@ -343,16 +346,26 @@ class Game:
         target = self.get(coords.dst)
         src_unit_type = self.get(coords.src).type.name
         dst_unit_type = self.get(coords.dst).type.name """
+
+        unit1 = self.get(coords.src)
+        target = self.get(coords.dst)
+
+        #performs only moves, no attack or repair
         if self.is_valid_move(coords):
-            """if unit1.player != target.player:
-                print("Attack")
-            elif (src_unit_type == "AI" and dst_unit_type == "Virus") or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
-                print("Repair")
-            else:"""
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
             return (True,"")
+        #do attack and repair (using functions)
+        if unit1.player.name != target.player.name:
+            target.mod_health(-unit1.damage_amount(target))
+        #repair
+        if unit1.player.name == target.player.name:
+            target.mod_health(unit1.repair_amount(target))
+
+        #add self destruct
         return (False,"invalid move")
+    
+        
 
     def next_turn(self):
         """Transitions game to the next turn."""
