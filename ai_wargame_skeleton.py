@@ -66,7 +66,6 @@ class Unit:
     def is_alive(self) -> bool:
         """Are we alive ?"""
         return self.health > 0
-
     def mod_health(self, health_delta : int):
         """Modify this unit's health by delta amount."""
         self.health += health_delta
@@ -309,34 +308,33 @@ class Game:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
+    
 
-
-
-    def is_valid_move(self, coords : CoordPair) -> bool:
+    def is_valid_move(self, coords : CoordPair) -> Tuple[bool, str]:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         #Checking if inside coordinate map
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
-            return False
+            return (False, "")
         unit1 = self.get(coords.src)
         #checks if correct player was moved
         if unit1 is None or unit1.player != self.next_player:
-            return False
+            return (False, "")
         unit2 = self.get(coords.dst)
         #Normal move, checks if space is empty for unit to move to
         if unit2 is None:
-            return True
+            return (True, "move")
         #Attack or Repair or incorrect move
         else:
             src_unit_type = self.get(coords.src).type.name
             dst_unit_type = self.get(coords.dst).type.name
             #Check if its attack (two adjacent players are opposing)
             if unit1.player.name != unit2.player.name:
-                return True
+                return (True, "attack")
             if (src_unit_type == "AI" and dst_unit_type == "Virus" ) or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
-                return True
+                return (True, "repair")
             #add self destruct
             else:
-                return False
+                return (False, "")
             
 
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
@@ -350,18 +348,20 @@ class Game:
         unit1 = self.get(coords.src)
         target = self.get(coords.dst)
 
-        #performs only moves, no attack or repair
-        if self.is_valid_move(coords):
+        value1, value2 = self.is_valid_move(coords)
+
+        if (value1 == True and value2 == "move"):
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
             return (True,"")
-        #do attack and repair (using functions)
-        if unit1.player.name != target.player.name:
-            target.mod_health(-unit1.damage_amount(target))
-        #repair
-        if unit1.player.name == target.player.name:
+        elif (value1 == True and value2 == "attack"):
+            target.mod_health(-unit1.damage_amount(target)) #opponent
+            unit1.mod_health(-unit1.damage_amount(unit1)) #you get damaged same amount as you deal
+            #add condition to check if unit is dead and remove if so
+            return (True,"")
+        elif (value1 == True and value2 == "repair"):
             target.mod_health(unit1.repair_amount(target))
-
+            return (True,"")
         #add self destruct
         return (False,"invalid move")
     
