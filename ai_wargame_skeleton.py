@@ -314,47 +314,45 @@ class Game:
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         #Checking if inside coordinate map
+        print("Enter is_valid_move Def")
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
+            print("Faild 1st IF statement")
             return False
+        print("Passed 1st IF statement")
         unit1 = self.get(coords.src)
         #checks if correct player was moved
         if unit1 is None or unit1.player != self.next_player:
+            print("Failed 2nd IF statement")
             return False
+        print("Passed 2nd IF statement")
         unit2 = self.get(coords.dst)
         #Normal move
         if unit2 is None:
+            print("Passed 3nd IF statement - Coordinate destination is empty")
             return True
-        #Attack or Repair or incorrect move
-        else:
-            src_unit_type = self.get(coords.src).type.name
-            dst_unit_type = self.get(coords.dst).type.name
-            #Check if its attack (two adjacent players are opposing)
-            if unit1.player != unit2.player:
-                return True
-            #check if the repair is valid
-            elif (src_unit_type == "AI" and dst_unit_type == "Virus") or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
-                return True
-            else:
+        
+        # Check if the move is allowed based on the rules
+        src_type = unit1.type
+        dst_coord = coords.dst
+
+        if src_type in [UnitType.AI, UnitType.Firewall, UnitType.Program]:
+            if dst_coord.row > coords.src.row or dst_coord.col > coords.src.col:
                 return False
+
+        if src_type == UnitType.Tech:
+            if abs(dst_coord.row - coords.src.row) > 1 or abs(dst_coord.col - coords.src.col) > 1:
+                return False
+
+        return True
             
 
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
-        #test
         """Validate and perform a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
-        """unit1 = self.get(coords.src)
-        target = self.get(coords.dst)
-        src_unit_type = self.get(coords.src).type.name
-        dst_unit_type = self.get(coords.dst).type.name """
         if self.is_valid_move(coords):
-            """if unit1.player != target.player:
-                print("Attack")
-            elif (src_unit_type == "AI" and dst_unit_type == "Virus") or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
-                print("Repair")
-            else:"""
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
-            return (True,"")
-        return (False,"invalid move")
+            return (True,"Move successful - (Source: perform_Move)")
+        return (False,"invalid move - (Source: perfrom_move)")
 
     def next_turn(self):
         """Transitions game to the next turn."""
@@ -407,7 +405,7 @@ class Game:
             if coords is not None and self.is_valid_coord(coords.src) and self.is_valid_coord(coords.dst):
                 return coords
             else:
-                print('Invalid coordinates! Try again.')
+                print('Invalid coordinates! Try again. - (Source: read_move)')
     
     def human_turn(self):
         """Human player plays a move (or get via broker)."""
