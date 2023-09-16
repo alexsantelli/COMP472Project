@@ -1,3 +1,5 @@
+#Will Branch
+
 from __future__ import annotations
 import argparse
 import copy
@@ -7,7 +9,7 @@ from dataclasses import dataclass, field
 from time import sleep
 from typing import Tuple, TypeVar, Type, Iterable, ClassVar
 import random
-#import requests
+import requests
 
 # maximum and minimum values for our heuristic scores (usually represents an end of game condition)
 MAX_HEURISTIC_SCORE = 2000000000
@@ -311,17 +313,44 @@ class Game:
 
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
+        #Checking if inside coordinate map
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
             return False
-        unit = self.get(coords.src)
-        if unit is None or unit.player != self.next_player:
+        unit1 = self.get(coords.src)
+        #checks if correct player was moved
+        if unit1 is None or unit1.player != self.next_player:
             return False
-        unit = self.get(coords.dst)
-        return (unit is None)
+        unit2 = self.get(coords.dst)
+        #Normal move
+        if unit2 is None:
+            return True
+        #Attack or Repair or incorrect move
+        else:
+            src_unit_type = self.get(coords.src).type.name
+            dst_unit_type = self.get(coords.dst).type.name
+            #Check if its attack (two adjacent players are opposing)
+            if unit1.player != unit2.player:
+                return True
+            #check if the repair is valid
+            elif (src_unit_type == "AI" and dst_unit_type == "Virus") or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
+                return True
+            else:
+                return False
+            
 
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
+        #test
         """Validate and perform a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
+        """unit1 = self.get(coords.src)
+        target = self.get(coords.dst)
+        src_unit_type = self.get(coords.src).type.name
+        dst_unit_type = self.get(coords.dst).type.name """
         if self.is_valid_move(coords):
+            """if unit1.player != target.player:
+                print("Attack")
+            elif (src_unit_type == "AI" and dst_unit_type == "Virus") or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
+                print("Repair")
+            else:"""
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
             return (True,"")
