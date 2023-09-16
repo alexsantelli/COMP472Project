@@ -71,6 +71,7 @@ class Unit:
 
     def mod_health(self, health_delta : int):
         """Modify this unit's health by delta amount."""
+        print("[Enter mod_health 1st def]")
         self.health += health_delta
         if self.health < 0:
             self.health = 0
@@ -306,6 +307,7 @@ class Game:
 
     def mod_health(self, coord : Coord, health_delta : int):
         """Modify health of unit at Coord (positive or negative delta)."""
+        print("[Enter mod_health 2nd def]")
         target = self.get(coord)
         if target is not None:
             target.mod_health(health_delta)
@@ -313,26 +315,27 @@ class Game:
 
     def is_valid_move(self, coords : CoordPair) -> bool:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
-        #Checking if inside coordinate map
-        print("Enter is_valid_move Def")
+        print("[Enter is_valid_move def]")
+
+        #Checking if inside coordinate map for the 2nd time as it's already occuring in the Read_me
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
-            print("Faild 1st IF statement")
+            print("-Error: Faild 1st IF statement - Not inside coordinate map")
             return False
-        print("Passed 1st IF statement")
-        unit1 = self.get(coords.src)
+        print("-Passed 1st IF statement - Inside coordinate map ")
+        coordinate_Source = self.get(coords.src)
         #checks if correct player was moved
-        if unit1 is None or unit1.player != self.next_player:
-            print("Failed 2nd IF statement")
+        if coordinate_Source is None or coordinate_Source.player != self.next_player:
+            print("-Error: Failed 2nd IF statement -  Wrong player or selected move")
             return False
-        print("Passed 2nd IF statement")
-        unit2 = self.get(coords.dst)
+        print("-Passed 2nd IF statement - Correct player moved")
+        coordinate_Destination = self.get(coords.dst)
         #Normal move
-        if unit2 is None:
-            print("Passed 3nd IF statement - Coordinate destination is empty")
+        if coordinate_Destination is None:
+            print("-Passed 3nd IF statement - Coordinate destination is empty")
             return True
         
         # Check if the move is allowed based on the rules
-        src_type = unit1.type
+        src_type = coordinate_Source.type
         dst_coord = coords.dst
 
         if src_type in [UnitType.AI, UnitType.Firewall, UnitType.Program]:
@@ -348,6 +351,7 @@ class Game:
 
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
         """Validate and perform a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
+        print("[Enter perform_move def]")
         if self.is_valid_move(coords):
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
@@ -356,6 +360,7 @@ class Game:
 
     def next_turn(self):
         """Transitions game to the next turn."""
+        print("[Enter next_turn def]")
         self.next_player = self.next_player.next()
         self.turns_played += 1
 
@@ -392,6 +397,7 @@ class Game:
     
     def is_valid_coord(self, coord: Coord) -> bool:
         """Check if a Coord is valid within out board dimensions."""
+        print("[Enter is_valid_coord def]")
         dim = self.options.dim
         if coord.row < 0 or coord.row >= dim or coord.col < 0 or coord.col >= dim:
             return False
@@ -399,6 +405,7 @@ class Game:
 
     def read_move(self) -> CoordPair:
         """Read a move from keyboard and return as a CoordPair."""
+        print("[Enter read_move def]")
         while True:
             s = input(F'Player {self.next_player.name}, enter your move: ')
             coords = CoordPair.from_string(s)
@@ -409,6 +416,7 @@ class Game:
     
     def human_turn(self):
         """Human player plays a move (or get via broker)."""
+        print("[Enter human_trun def]")
         if self.options.broker is not None:
             print("Getting next move with auto-retry from game broker...")
             while True:
@@ -431,10 +439,11 @@ class Game:
                     self.next_turn()
                     break
                 else:
-                    print("The move is not valid! Try again.")
+                    print("The move is not valid! Try again. - (Source: human_turn)")
 
     def computer_turn(self) -> CoordPair | None:
         """Computer plays a move."""
+        print("[Enter computer_turn def]")
         mv = self.suggest_move()
         if mv is not None:
             (success,result) = self.perform_move(mv)
