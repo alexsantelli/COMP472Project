@@ -361,11 +361,25 @@ class Game:
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
         """Validate and perform a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         print("[Enter perform_move def]")
-        if self.is_valid_move(coords):
+        unit1 = self.get(coords.src)
+        target = self.get(coords.dst)
+
+        value1, value2 = self.is_valid_move(coords)
+
+        if (value1 == True and value2 == "move"):
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
-            return (True,"Move successful - (Source: perform_Move)")
-        return (False,"invalid move - (Source: perfrom_move)")
+            return (True,"")
+        elif (value1 == True and value2 == "attack"):
+            target.mod_health(-unit1.damage_amount(target)) #opponent
+            unit1.mod_health(-unit1.damage_amount(unit1)) #you get damaged same amount as you deal
+            #add condition to check if unit is dead and remove if so
+            return (True,"Attack successful - (Source: perfom_move def)")
+        elif (value1 == True and value2 == "repair"):
+            target.mod_health(unit1.repair_amount(target))
+            return (True,"Repair successful - (Source: perfom_move def)")
+        #add self destruct
+        return (False,"invalid move")
 
     def next_turn(self):
         """Transitions game to the next turn."""
