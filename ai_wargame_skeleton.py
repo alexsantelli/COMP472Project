@@ -71,7 +71,9 @@ class Unit:
 
     def mod_health(self, health_delta : int):
         """Modify this unit's health by delta amount."""
-        print("[Enter mod_health 1st def]")
+        #For Test only
+        #print("[Enter mod_health 1st def]")
+        
         self.health += health_delta
         if self.health < 0:
             self.health = 0
@@ -387,7 +389,7 @@ class Game:
             src_unit_type = self.get(coords.src).type.name
             dst_unit_type = self.get(coords.dst).type.name
             if unit1.player.name != unit2.player.name:
-                return (True, "attack")
+                return (True, "attack", True)
             if (src_unit_type == "AI" and dst_unit_type == "Virus" ) or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
                 return (True, "repair")
             #add self destruct
@@ -400,24 +402,27 @@ class Game:
         #For testing 
         #print("[Enter perform_move def]")
 
-        
-        unit1 = self.get(coords.src)
-        target = self.get(coords.dst)
+        current_Player = self.get(coords.src)
+        opponent = self.get(coords.dst)
 
-        value1, value2 = self.is_valid_move(coords)
+        boolean_Action, action = self.is_valid_move(coords)
 
-        if (value1 == True and value2 == "move"):
+        if (boolean_Action == True and action == "move"):
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
             return (True,"")
-        elif (value1 == True and value2 == "attack"):
-            target.mod_health(-unit1.damage_amount(target)) #opponent
-            unit1.mod_health(-unit1.damage_amount(unit1)) #you get damaged same amount as you deal
+        elif (boolean_Action == True and action == "attack"):
+            opponent.mod_health(-current_Player.damage_amount(opponent)) #opponent
+            current_Player.mod_health(-current_Player.damage_amount(current_Player)) #you get damaged same amount as you deal
+
+            print("opponent health: ", opponent.mod_health)
             #add condition to check if unit is dead and remove if so
-            return (True,"Attack successful - (Source: perfom_move def)")
-        elif (value1 == True and value2 == "repair"):
-            target.mod_health(unit1.repair_amount(target))
-            return (True,"Repair successful - (Source: perfom_move def)")
+            print("Attack successful")
+            return (True,"")
+        elif (boolean_Action == True and action == "repair"):
+            opponent.mod_health(current_Player.repair_amount(opponent))
+            print("Repair successful")
+            return (True,"")
         #add self destruct
         return (False,"invalid move")
 
