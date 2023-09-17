@@ -331,18 +331,16 @@ class Game:
 
         Current_Player_Type = coordinate_Source.player.name
 
-        #Normal move, checks if space is empty for unit to move to
+        #Section 1.2: Movement.
+        #Checks if space is empty first
         if coordinate_Destination is None: 
-            #Checks to is if the Unit type is AI or Firewall or program and validates if the move can be performed. 
             dst_coord = coords.dst
             src_unit_type = self.get(coords.src).type.name
-            #Coord_src_type = self.get(coords.src).type.name
-            total_Row_Move = abs(dst_coord.row - coords.src.row)
-            total_Col_Move = abs(dst_coord.col - coords.src.col)
+            total_Row_Move = abs(dst_coord.row - coords.src.row) #Total number of rows moved
+            total_Col_Move = abs(dst_coord.col - coords.src.col) #Total number of columns moved
 
             #**************************** ONLY FOR TESTING PURPOSES ******************************************
-            test_Values_Switch = False                                                                      #*
-                                                                                                            #*
+            test_Values_Switch = False                                                                      #* 
             if test_Values_Switch == True:                                                                  #*
                 print("Player type: ",  coordinate_Source.player.name)                                      #*
                 print("Source Coord_src_type: ",  src_unit_type)                                            #*
@@ -353,9 +351,11 @@ class Game:
                 print("Total Row Move: ",  total_Row_Move, ", Total Col Move: ",  total_Col_Move)           #*
             #*************************************************************************************************
 
-            if (total_Row_Move <= 1) and (total_Col_Move <= 1):
+            #If the total rows and columns is equal to one
+            if total_Row_Move == 1 or total_Col_Move == 1:
                 #If current player is an Attacker
                 if Current_Player_Type == "Attacker":
+                    #Checks if the unit type is AI, Firewall or a Program and validates if the move can be performed based on their curriculum. 
                     if (src_unit_type == "AI" or src_unit_type == "Firewall" or src_unit_type == "Program"):
                         if dst_coord.row < coords.src.row or dst_coord.col < coords.src.col:
                             print("- ", Current_Player_Type,src_unit_type, " move is Valid")
@@ -397,7 +397,10 @@ class Game:
 
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
         """Validate and perform a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
-        print("[Enter perform_move def]")
+        #For testing 
+        #print("[Enter perform_move def]")
+
+        
         unit1 = self.get(coords.src)
         target = self.get(coords.dst)
 
@@ -465,7 +468,9 @@ class Game:
 
     def read_move(self) -> CoordPair:
         """Read a move from keyboard and return as a CoordPair."""
-        print("[Enter read_move def]")
+        #For testing
+        #print("[Enter read_move def]")
+         
         while True:
             s = input(F'Player {self.next_player.name}, enter your move: ')
             coords = CoordPair.from_string(s)
@@ -476,7 +481,9 @@ class Game:
     
     def human_turn(self):
         """Human player plays a move (or get via broker)."""
-        print("[Enter human_trun def]")
+        #For testing
+        #print("[Enter human_trun def]")
+
         if self.options.broker is not None:
             print("Getting next move with auto-retry from game broker...")
             while True:
@@ -499,7 +506,7 @@ class Game:
                     self.next_turn()
                     break
                 else:
-                    print("The move is not valid! Try again. - (Source: human_turn)")
+                    print("The move is not valid! Try again. - (Source: human_turn def)")
 
     def computer_turn(self) -> CoordPair | None:
         """Computer plays a move."""
