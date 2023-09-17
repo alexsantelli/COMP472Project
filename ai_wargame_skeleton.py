@@ -317,45 +317,82 @@ class Game:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         #print("[Enter is_valid_move def]")
 
-        #Checking if inside coordinate map for the 2nd time as it's already occuring in the Read_me
+        #Checking if inside coordinate map
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
-            print("-Error: Faild 1st IF statement - Not inside coordinate map")
-            return False
-        print("-Passed 1st IF statement - Inside coordinate map ")
+            return (False, "-Passed 1st IF statement - Inside coordinate map")
         coordinate_Source = self.get(coords.src)
+        unit1 = self.get(coords.src)
         #checks if correct player was moved
         if coordinate_Source is None or coordinate_Source.player != self.next_player:
-            print("-Error: Failed 2nd IF statement -  Wrong player or selected move")
-            return False
-        print("-Passed 2nd IF statement - Correct player moved")
+            return (False, "-Passed 2nd IF statement - Correct player moved")
         coordinate_Destination = self.get(coords.dst)
-        #Normal move
-        if coordinate_Destination is not None:
-            print("-Failed 3nd IF statement - Coordinate destination is not empty")
-            return False
-        
-        # Check if the move is allowed based on the rules
-        Coord_src_type = coordinate_Source.type
-        dst_coord = coords.dst
-        print("Source type: ",  Coord_src_type)
-        print("Dest Coord: ",  dst_coord)
+        unit2 = self.get(coords.dst)
+        #Coord_src_type = coordinate_Source.type
 
-        if Coord_src_type in [UnitType.AI, UnitType.Firewall, UnitType.Program]:
-            print("Source type: ",  Coord_src_type)
-            print("Dest Coord: ",  dst_coord)
-            if dst_coord.row > coords.src.row or dst_coord.col > coords.src.col:
-                return False
-        
-        unit1_tech_abs = abs(dst_coord.row - coords.src.row)
-        unit2_tech_abs = abs(dst_coord.col - coords.src.col)
-        print("unit abs 1:", unit1_tech_abs)
-        print("unit abs 2:", unit2_tech_abs)
-        if Coord_src_type == UnitType.Tech:
+        Current_Player_Type = coordinate_Source.player.name
 
-            if abs(dst_coord.row - coords.src.row) > 1 or abs(dst_coord.col - coords.src.col) > 1:
-                return False
+        #Normal move, checks if space is empty for unit to move to
+        if coordinate_Destination is None: 
+            #Checks to is if the Unit type is AI or Firewall or program and validates if the move can be performed. 
+            dst_coord = coords.dst
+            src_unit_type = self.get(coords.src).type.name
+            #Coord_src_type = self.get(coords.src).type.name
+            total_Row_Move = abs(dst_coord.row - coords.src.row)
+            total_Col_Move = abs(dst_coord.col - coords.src.col)
 
-        return True
+            #**************************** ONLY FOR TESTING PURPOSES ******************************************
+            test_Values_Switch = False                                                                      #*
+                                                                                                            #*
+            if test_Values_Switch == True:                                                                  #*
+                print("Player type: ",  coordinate_Source.player.name)                                      #*
+                print("Source Coord_src_type: ",  src_unit_type)                                            #*
+                print("Source type: ",  src_unit_type)                                                      #*
+                print("Dest type: ",  dst_coord)                                                            #*
+                print("Dest row: ",  dst_coord.row, ", Coords_src_row: ",  coords.src.row)                  #*
+                print("Dest col: ",  dst_coord.col, ", Coords_src_col: ",  coords.src.col)                  #*
+                print("Total Row Move: ",  total_Row_Move, ", Total Col Move: ",  total_Col_Move)           #*
+            #*************************************************************************************************
+
+            if (total_Row_Move <= 1) and (total_Col_Move <= 1):
+                #If current player is an Attacker
+                if Current_Player_Type == "Attacker":
+                    if (src_unit_type == "AI" or src_unit_type == "Firewall" or src_unit_type == "Program"):
+                        if dst_coord.row < coords.src.row or dst_coord.col < coords.src.col:
+                            print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                            return (True, "move")
+                        else:
+                            print("-[Error] ", Current_Player_Type , src_unit_type," Can only move up or left")
+                            return (False, "")
+                    elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                        return (True, "move")
+                
+                #If current player is a Defender
+                if Current_Player_Type == "Defender":
+                    if (src_unit_type == "AI" or src_unit_type == "Firewall" or src_unit_type == "Program"):
+                        if dst_coord.row > coords.src.row or dst_coord.col > coords.src.col:
+                            print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                            return (True, "move")
+                        else:
+                            print("-[Error] ", Current_Player_Type , src_unit_type, " Can only move right or down")
+                            return (False, "")
+                    elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                        return (True, "move")
+            else:
+                print("-[Error] Invalid Move! 1 unit space can only be moved!")
+                return (False, "")
+                
+        #Attack or Repair or incorrect move
+        else:
+            #Check if its attack (two adjacent players are opposing)
+            src_unit_type = self.get(coords.src).type.name
+            dst_unit_type = self.get(coords.dst).type.name
+            if unit1.player.name != unit2.player.name:
+                return (True, "attack")
+            if (src_unit_type == "AI" and dst_unit_type == "Virus" ) or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
+                return (True, "repair")
+            #add self destruct
+            else:
+                return (False, "")
             
 
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
