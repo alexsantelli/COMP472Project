@@ -325,14 +325,15 @@ class Game:
             return (True, "move")
         #Attack or Repair or incorrect move
         else:
-            src_unit_type = self.get(coords.src).type.name
-            dst_unit_type = self.get(coords.dst).type.name
+            src_unit_type = self.get(coords.src).type
+            dst_unit_type = self.get(coords.dst).type
             #Check if its attack (two adjacent players are opposing)
             if unit1.player.name != unit2.player.name:
                 return (True, "attack")
-            if (src_unit_type == "AI" and dst_unit_type == "Virus" ) or (src_unit_type == "AI" and dst_unit_type == "Tech") or (src_unit_type == "Tech" and dst_unit_type == "AI") or (src_unit_type == "Tech" and dst_unit_type == "Firewall") or (src_unit_type == "Tech" and dst_unit_type == "Program"):
+            if (self.get(coords.dst).health < 9) and ((src_unit_type == UnitType.AI and dst_unit_type == UnitType.Virus ) or (src_unit_type == UnitType.AI and dst_unit_type == UnitType.Tech) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.AI) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Firewall) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Program)):
                 return (True, "repair")
-            #add self destruct
+            if self.get(coords.src) == self.get(coords.dst):
+                return (True, "self-destruct")
             else:
                 return (False, "")
             
@@ -340,11 +341,6 @@ class Game:
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
         #test
         """Validate and perform a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
-        """unit1 = self.get(coords.src)
-        target = self.get(coords.dst)
-        src_unit_type = self.get(coords.src).type.name
-        dst_unit_type = self.get(coords.dst).type.name """
-
         unit1 = self.get(coords.src)
         target = self.get(coords.dst)
 
@@ -355,12 +351,12 @@ class Game:
             self.set(coords.src,None)
             return (True,"")
         elif (value1 == True and value2 == "attack"):
-            target.mod_health(-unit1.damage_amount(target)) #opponent
-            unit1.mod_health(-unit1.damage_amount(unit1)) #you get damaged same amount as you deal
-            #add condition to check if unit is dead and remove if so
+            #Modifying health and removing if dead
+            self.mod_health(coords.dst, -unit1.damage_amount(target))
+            self.mod_health(coords.src, -target.damage_amount(unit1))
             return (True,"")
         elif (value1 == True and value2 == "repair"):
-            target.mod_health(unit1.repair_amount(target))
+            self.mod_health(coords.dst, unit1.repair_amount(target))
             return (True,"")
         #add self destruct
         return (False,"invalid move")
