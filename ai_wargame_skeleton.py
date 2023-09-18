@@ -365,7 +365,7 @@ class Game:
                 print("coords.src.player", coordinate_Source.player) #
             #*************************************************************************************************
             
-            #Ensure that player is not engaged from a battle 
+            #Look through all four adjacent coordinates if there are any engaged battles
             for coordinates in adjacent_engaged_coords:
                 adjacent_unit = self.get(coordinates)
                 if (adjacent_unit is not None and 
