@@ -343,10 +343,10 @@ class Game:
             total_Row_Move = abs(dst_coord.row - coords.src.row) #Total number of rows moved
             total_Col_Move = abs(dst_coord.col - coords.src.col) #Total number of columns moved
             adjacent_engaged_coords = [ Coord(coords.src.row - 1, coords.src.col),  # Up
-                                Coord(coords.src.row, coords.src.col - 1),  # Left
-                                Coord(coords.src.row + 1, coords.src.col),  # Down
-                                Coord(coords.src.row, coords.src.col + 1),  # Right
-                            ]
+                                        Coord(coords.src.row, coords.src.col - 1),  # Left
+                                        Coord(coords.src.row + 1, coords.src.col),  # Down
+                                        Coord(coords.src.row, coords.src.col + 1),  # Right
+                                        ]
         
             #**************************** ONLY FOR TESTING PURPOSES ******************************************
             test_Values_Switch = False                                                                      #* 
