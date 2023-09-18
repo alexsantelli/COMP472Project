@@ -362,7 +362,7 @@ class Game:
                 print("Adjacent down(before move): ",  Coord(coords.src.row + 1, coords.src.col))           #*
                 print("Adjacent Left(before move): ",  Coord(coords.src.row, coords.src.col - 1))           #*
                 print("Adjacent Right(before move): ",  Coord(coords.src.row, coords.src.col + 1))          #*
-                print("coords.src.player", coordinate_Source.player) #
+                print("coords.src.player", coordinate_Source.player)                                        #*
             #*************************************************************************************************
             
             #Look through all four adjacent coordinates if there are any engaged battles
