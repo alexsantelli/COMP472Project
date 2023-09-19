@@ -358,7 +358,13 @@ class Game:
         elif (value1 == True and value2 == "repair"):
             self.mod_health(coords.dst, unit1.repair_amount(target))
             return (True,"")
-        #add self destruct
+        elif (value1 == True and value2 == "self-destruct"):
+            self.mod_health(coords.src, -9)
+            for coord in coords.src.iter_range(1):
+                if self.get(coord) is not None:
+                    self.mod_health(coord, -2)
+                self.remove_dead(coord)
+            return (True, "")
         return (False,"invalid move")
     
         
@@ -601,10 +607,17 @@ def main():
     # create a new game
     game = Game(options=options)
 
+    
+
     # the main game loop
     while True:
         print()
         print(game)
+
+        # writing to output file (using append)
+        with open('log.txt', 'a') as f:
+            f.write(str(game))
+
         winner = game.has_winner()
         if winner is not None:
             print(f"{winner.name} wins!")
