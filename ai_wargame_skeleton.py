@@ -308,15 +308,6 @@ class Game:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
-<<<<<<< Updated upstream
-    
-=======
-    def is_valid_move(self, coords : CoordPair) -> bool:
-        """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
-        #For testing only
-        #print("[Enter is_valid_move def]")
->>>>>>> Stashed changes
-
     def is_valid_move(self, coords : CoordPair) -> Tuple[bool, str]:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         #Checking if inside coordinate map
