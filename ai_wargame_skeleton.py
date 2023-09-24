@@ -1,3 +1,5 @@
+#Will Branch
+
 from __future__ import annotations
 import argparse
 import copy
@@ -7,7 +9,7 @@ from dataclasses import dataclass, field
 from time import sleep
 from typing import Tuple, TypeVar, Type, Iterable, ClassVar
 import random
-import requests
+#import requests
 
 # maximum and minimum values for our heuristic scores (usually represents an end of game condition)
 MAX_HEURISTIC_SCORE = 2000000000
@@ -68,6 +70,9 @@ class Unit:
         return self.health > 0
     def mod_health(self, health_delta : int):
         """Modify this unit's health by delta amount."""
+        #For Test only
+        #print("[Enter mod_health 1st def]")
+        
         self.health += health_delta
         if self.health < 0:
             self.health = 0
@@ -303,26 +308,132 @@ class Game:
 
     def mod_health(self, coord : Coord, health_delta : int):
         """Modify health of unit at Coord (positive or negative delta)."""
+        print("[Enter mod_health 2nd def]")
         target = self.get(coord)
         if target is not None:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
-    def is_valid_move(self, coords : CoordPair) -> Tuple[bool, str]:
+
+    def is_valid_move(self, coords : CoordPair)  -> Tuple[bool, str]:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
+        #print("[Enter is_valid_move def]")
+        
         #Checking if inside coordinate map
         if not self.is_valid_coord(coords.src) or not self.is_valid_coord(coords.dst):
             return (False, "")
+        coordinate_Source = self.get(coords.src)
         unit1 = self.get(coords.src)
         #checks if correct player was moved
-        if unit1 is None or unit1.player != self.next_player:
+        if coordinate_Source is None or coordinate_Source.player != self.next_player:
+            
             return (False, "")
+        coordinate_Destination = self.get(coords.dst)
         unit2 = self.get(coords.dst)
-        #Normal move, checks if space is empty for unit to move to
-        if unit2 is None:
-            with open('log.txt', 'a') as f:
-                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
-            return (True, "move")
+
+        Current_Player_Type = coordinate_Source.player.name
+
+        #Section 1.2: Movement.
+        #Checks if space is empty first
+        if (coordinate_Destination is None): 
+            dst_coord = coords.dst
+            src_unit_type = self.get(coords.src).type.name #Unit source type
+            engaged_To_Enemy = False
+            allie_Present = False
+            total_Row_Move = abs(dst_coord.row - coords.src.row) #Total number of rows moved
+            total_Col_Move = abs(dst_coord.col - coords.src.col) #Total number of columns moved
+            adjacent_engaged_coords = [ Coord(coords.src.row - 1, coords.src.col),  # Up
+                                        Coord(coords.src.row, coords.src.col - 1),  # Left
+                                        Coord(coords.src.row + 1, coords.src.col),  # Down
+                                        Coord(coords.src.row, coords.src.col + 1),  # Right
+                                        ]
+        
+            #**************************** ONLY FOR TESTING PURPOSES ******************************************
+            test_Values_Switch = False                                                                      #* 
+            if test_Values_Switch == True:                                                                  #*
+                print("Player type: ",  coordinate_Source.player.name)                                      #*
+                print("Source Coord_src_type: ",  src_unit_type)                                            #*
+                print("Source type: ",  src_unit_type)                                                      #*
+                print("Dest type: ",  dst_coord)                                                            #*
+                print("Dest row: ",  dst_coord.row, ", Coords_src_row: ",  coords.src.row)                  #*
+                print("Dest col: ",  dst_coord.col, ", Coords_src_col: ",  coords.src.col)                  #*
+                print("Total Row Move: ",  total_Row_Move, ", Total Col Move: ",  total_Col_Move)           #*
+                print("Adjacent Up(before move): ",  Coord(coords.src.row - 1, coords.src.col))             #*
+                print("Adjacent down(before move): ",  Coord(coords.src.row + 1, coords.src.col))           #*
+                print("Adjacent Left(before move): ",  Coord(coords.src.row, coords.src.col - 1))           #*
+                print("Adjacent Right(before move): ",  Coord(coords.src.row, coords.src.col + 1))          #*
+                print("coords.src.player", coordinate_Source.player)                                        #*
+            #*************************************************************************************************
+            
+            #Look through all four adjacent coordinates if there are any engaged battles
+            for coordinates in adjacent_engaged_coords:
+                adjacent_unit = self.get(coordinates)
+                if (adjacent_unit is not None and 
+                    adjacent_unit.player != coordinate_Source.player and self.is_valid_coord(coordinates)):
+                    #print("test11:", self.get(coordinates))
+                    #print("test2:", adjacent_unit.player)
+                    #print("test3:", coordinate_Source.player)
+                    engaged_To_Enemy = True
+                elif adjacent_unit is not None and adjacent_unit.player == coordinate_Source.player:
+                    allie_Present = True
+                    #print("enemy: ", engaged_To_Enemy, ", ally: ", allie_Present) 
+                    
+
+            #If the total rows and columns is equal to 1 or 0
+            if (total_Row_Move == 1) or (total_Col_Move == 1):
+                    #If current player is an Attacker
+                    if Current_Player_Type == "Attacker":
+                        #Checks if the unit type is AI, Firewall or a Program 
+                        if (src_unit_type == "AI" or src_unit_type == "Firewall" or src_unit_type == "Program"):
+                            #Validates if the move can be performed based on their curriculum.
+                            if dst_coord.row < coords.src.row or dst_coord.col < coords.src.col:
+                                #Ensure that player is not engaged from a battle
+                                if engaged_To_Enemy != True:
+                                    print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                                    with open('log.txt', 'a') as f:
+                                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                                    return (True, "move")
+                                elif engaged_To_Enemy == True and allie_Present == True:
+                                    print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent")
+                                    return (False, "")
+                            else:
+                                print("-[Error] ", Current_Player_Type , src_unit_type," Can only move up or left")
+                                return (False, "")
+                        #Checks if the unit type is Tech or Virus which can move freely    
+                        elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                            print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                            with open('log.txt', 'a') as f:
+                                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                            return (True, "move")
+                    
+                    #If current player is a Defender
+                    if Current_Player_Type == "Defender":
+                        #Checks if the unit type is AI, Firewall or a Program 
+                        if (src_unit_type == "AI" or src_unit_type == "Firewall" or src_unit_type == "Program"):
+                            #Validates if the move can be performed based on their curriculum.
+                            if dst_coord.row > coords.src.row or dst_coord.col > coords.src.col:
+                                #Ensure that player is not engaged from a battle
+                                #print("enemy: ", engaged_To_Enemy, ", ally: ", allie_Present) 
+                                if engaged_To_Enemy != True:
+                                    print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                                    with open('log.txt', 'a') as f:
+                                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                                    return (True, "move")
+                                elif engaged_To_Enemy == True and allie_Present == True:
+                                    print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent")
+                                    return (False, "")
+                            else:
+                                print("-[Error] ", Current_Player_Type , src_unit_type," Can only move down or right")
+                                return (False, "")
+                        #Checks if the unit type is Tech or Virus which can move freely    
+                        elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                            with open('log.txt', 'a') as f:
+                                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                            return (True, "move")
+            else:
+                print("-[Error] Invalid Move! 1 unit space can only be moved!")
+                return (False, "")
+                
         #Attack or Repair or incorrect move
         else:
             src_unit_type = self.get(coords.src).type
@@ -347,36 +458,43 @@ class Game:
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
         #test
         """Validate and perform a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
-        unit1 = self.get(coords.src)
-        target = self.get(coords.dst)
+        #For testing 
+        #print("[Enter perform_move def]")
 
-        value1, value2 = self.is_valid_move(coords)
+        current_Player = self.get(coords.src)
+        opponent = self.get(coords.dst)
 
-        if (value1 == True and value2 == "move"):
+        boolean_Action, action = self.is_valid_move(coords)
+
+        if (boolean_Action == True and action == "move"):
             self.set(coords.dst,self.get(coords.src))
             self.set(coords.src,None)
             return (True,"")
-        elif (value1 == True and value2 == "attack"):
-            #Modifying health and removing if dead
-            self.mod_health(coords.dst, -unit1.damage_amount(target))
-            self.mod_health(coords.src, -target.damage_amount(unit1))
+        elif (boolean_Action == True and action == "attack"):
+            self.mod_health(coords.dst, -current_Player.damage_amount(opponent))
+            self.mod_health(coords.src, -opponent.damage_amount(current_Player))
+            print("Attack successful")
             return (True,"")
-        elif (value1 == True and value2 == "repair"):
-            self.mod_health(coords.dst, unit1.repair_amount(target))
+        elif (boolean_Action == True and action == "repair"):
+            opponent.mod_health(current_Player.repair_amount(opponent))
+            print("Repair successful")
             return (True,"")
-        elif (value1 == True and value2 == "self-destruct"):
+        # Self destruct not completed****
+        elif (boolean_Action == True and action == "self-destruct"):
             self.mod_health(coords.src, -9)
             for coord in coords.src.iter_range(1):
                 if self.get(coord) is not None:
                     self.mod_health(coord, -2)
                 self.remove_dead(coord)
-            return (True, "")
+            return (True,"")
         return (False,"invalid move")
     
         
 
     def next_turn(self):
         """Transitions game to the next turn."""
+        #for test only
+        #print("[Enter next_turn def]")
         self.next_player = self.next_player.next()
         self.turns_played += 1
 
@@ -413,6 +531,7 @@ class Game:
     
     def is_valid_coord(self, coord: Coord) -> bool:
         """Check if a Coord is valid within out board dimensions."""
+        #print("[Enter is_valid_coord def]")
         dim = self.options.dim
         if coord.row < 0 or coord.row >= dim or coord.col < 0 or coord.col >= dim:
             return False
@@ -420,16 +539,22 @@ class Game:
 
     def read_move(self) -> CoordPair:
         """Read a move from keyboard and return as a CoordPair."""
+        #For testing
+        #print("[Enter read_move def]")
+         
         while True:
             s = input(F'Player {self.next_player.name}, enter your move: ')
             coords = CoordPair.from_string(s)
             if coords is not None and self.is_valid_coord(coords.src) and self.is_valid_coord(coords.dst):
                 return coords
             else:
-                print('Invalid coordinates! Try again.')
+                print('Invalid coordinates! Try again. - (Source: read_move)')
     
     def human_turn(self):
         """Human player plays a move (or get via broker)."""
+        #For testing
+        #print("[Enter human_trun def]")
+
         if self.options.broker is not None:
             print("Getting next move with auto-retry from game broker...")
             while True:
@@ -452,10 +577,11 @@ class Game:
                     self.next_turn()
                     break
                 else:
-                    print("The move is not valid! Try again.")
+                    print("The move is not valid! Try again. - (Source: human_turn def)")
 
     def computer_turn(self) -> CoordPair | None:
         """Computer plays a move."""
+        print("[Enter computer_turn def]")
         mv = self.suggest_move()
         if mv is not None:
             (success,result) = self.perform_move(mv)
