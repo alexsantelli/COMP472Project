@@ -68,7 +68,6 @@ class Unit:
     def is_alive(self) -> bool:
         """Are we alive ?"""
         return self.health > 0
-
     def mod_health(self, health_delta : int):
         """Modify this unit's health by delta amount."""
         #For Test only
@@ -315,6 +314,7 @@ class Game:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
+
     def is_valid_move(self, coords : CoordPair)  -> Tuple[bool, str]:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         #print("[Enter is_valid_move def]")
@@ -456,6 +456,7 @@ class Game:
             
 
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
+        #test
         """Validate and perform a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         #For testing 
         #print("[Enter perform_move def]")
@@ -487,6 +488,8 @@ class Game:
                 self.remove_dead(coord)
             return (True,"")
         return (False,"invalid move")
+    
+        
 
     def next_turn(self):
         """Transitions game to the next turn."""
@@ -736,13 +739,39 @@ def main():
     # create a new game
     game = Game(options=options)
 
+    # Game specifications
+    with open('log.txt', 'a') as f:
+            f.write("Timeout: " + str(options.max_time)+ " seconds\n")
+            if (options.game_type.value == 0):
+                f.write("Play mode: Player 1 = H & Player 2 = H\n")
+            elif (options.game_type.value == 1):
+                f.write("Play mode: Player 1 = H & Player 2 = AI\n")
+            elif (options.game_type.value == 2):
+                f.write("Play mode: Player 1 = AI & Player 2 = H\n")
+            elif (options.game_type.value == 3):
+                f.write("Play mode: Player 1 = AI & Player 2 = AI\n")
+            f.write(f"Maximum number of turns: {options.max_turns}\n")
+            f.write(f"Alpha-Beta: {options.alpha_beta}\n")
+
+    
+
     # the main game loop
     while True:
         print()
         print(game)
+
+        
+        # writing to output file (using append)
+        with open('log.txt', 'a') as f:
+            f.write(str(game) + "\n")
+        
+
         winner = game.has_winner()
+        end_turns = game.turns_played
         if winner is not None:
             print(f"{winner.name} wins!")
+            with open('log.txt', 'a') as f:
+                f.write(winner.name+" wins in "+ str(end_turns) + "\n\n")
             break
         if game.options.game_type == GameType.AttackerVsDefender:
             game.human_turn()
