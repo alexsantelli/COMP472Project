@@ -315,7 +315,7 @@ class Game:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
-    def is_valid_move(self, coords : CoordPair) -> bool:
+    def is_valid_move(self, coords : CoordPair)  -> Tuple[bool, str]:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
         #print("[Enter is_valid_move def]")
         
@@ -380,12 +380,7 @@ class Game:
                     
 
             #If the total rows and columns is equal to 1 or 0
-            if (total_Row_Move <= 1) or (total_Col_Move <= 1):
-                #Self destruct if movement was made
-                if (total_Row_Move == 0) and (total_Col_Move == 0):
-                    #print("Self destruct!")
-                    return (True, 'selfdestruct')
-                else:
+            if (total_Row_Move == 1) or (total_Col_Move == 1):
                     #If current player is an Attacker
                     if Current_Player_Type == "Attacker":
                         #Checks if the unit type is AI, Firewall or a Program 
@@ -395,6 +390,8 @@ class Game:
                                 #Ensure that player is not engaged from a battle
                                 if engaged_To_Enemy != True:
                                     print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                                    with open('log.txt', 'a') as f:
+                                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                     return (True, "move")
                                 elif engaged_To_Enemy == True and allie_Present == True:
                                     print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent")
@@ -405,6 +402,8 @@ class Game:
                         #Checks if the unit type is Tech or Virus which can move freely    
                         elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
                             print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                            with open('log.txt', 'a') as f:
+                                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                             return (True, "move")
                     
                     #If current player is a Defender
@@ -417,6 +416,8 @@ class Game:
                                 #print("enemy: ", engaged_To_Enemy, ", ally: ", allie_Present) 
                                 if engaged_To_Enemy != True:
                                     print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                                    with open('log.txt', 'a') as f:
+                                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                     return (True, "move")
                                 elif engaged_To_Enemy == True and allie_Present == True:
                                     print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent")
@@ -426,6 +427,8 @@ class Game:
                                 return (False, "")
                         #Checks if the unit type is Tech or Virus which can move freely    
                         elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                            with open('log.txt', 'a') as f:
+                                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                             return (True, "move")
             else:
                 print("-[Error] Invalid Move! 1 unit space can only be moved!")
@@ -433,14 +436,20 @@ class Game:
                 
         #Attack or Repair or incorrect move
         else:
-            #Check if its attack (two adjacent players are opposing)
             src_unit_type = self.get(coords.src).type
             dst_unit_type = self.get(coords.dst).type
+            #Check if its attack (two adjacent players are opposing)
             if unit1.player.name != unit2.player.name:
+                with open('log.txt', 'a') as f:
+                    f.write(str(unit1) + " attacked " + str(unit2) + "\n\n")
                 return (True, "attack")
             if (self.get(coords.dst).health < 9) and ((src_unit_type == UnitType.AI and dst_unit_type == UnitType.Virus ) or (src_unit_type == UnitType.AI and dst_unit_type == UnitType.Tech) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.AI) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Firewall) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Program)):
+                with open('log.txt', 'a') as f:
+                    f.write(str(unit1) + " repaired " + str(unit2) + "\n\n")
                 return (True, "repair")
             if self.get(coords.src) == self.get(coords.dst):
+                with open('log.txt', 'a') as f:
+                    f.write(str(unit1) + " self-destructed" + "\n\n")
                 return (True, "self-destruct")
             else:
                 return (False, "")
@@ -470,8 +479,12 @@ class Game:
             print("Repair successful")
             return (True,"")
         # Self destruct not completed****
-        elif (boolean_Action == True and action == "selfdestruct"):
-            print("selfdestruct successful")
+        elif (boolean_Action == True and action == "self-destruct"):
+            self.mod_health(coords.src, -9)
+            for coord in coords.src.iter_range(1):
+                if self.get(coord) is not None:
+                    self.mod_health(coord, -2)
+                self.remove_dead(coord)
             return (True,"")
         return (False,"invalid move")
 
