@@ -381,30 +381,30 @@ class Game:
 
             #If the total rows and columns is equal to 1 or 0
             if (total_Row_Move == 1) or (total_Col_Move == 1):
-                    #If current player is an Attacker
-                    if Current_Player_Type == "Attacker":
-                        #Checks if the unit type is AI, Firewall or a Program 
-                        if (src_unit_type == "AI" or src_unit_type == "Firewall" or src_unit_type == "Program"):
-                            #Validates if the move can be performed based on their curriculum.
-                            if dst_coord.row < coords.src.row or dst_coord.col < coords.src.col:
-                                #Ensure that player is not engaged from a battle
-                                if engaged_To_Enemy != True:
-                                    print("- ", Current_Player_Type,src_unit_type, " move is Valid")
-                                    with open('log.txt', 'a') as f:
-                                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
-                                    return (True, "move")
-                                elif engaged_To_Enemy == True and allie_Present == True:
-                                    print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent")
-                                    return (False, "")
-                            else:
-                                print("-[Error] ", Current_Player_Type , src_unit_type," Can only move up or left")
+                #If current player is an Attacker
+                if Current_Player_Type == "Attacker":
+                    #Checks if the unit type is AI, Firewall or a Program 
+                    if (src_unit_type == "AI" or src_unit_type == "Firewall" or src_unit_type == "Program"):
+                        #Validates if the move can be performed based on their curriculum.
+                        if dst_coord.row < coords.src.row or dst_coord.col < coords.src.col:
+                            #Ensure that player is not engaged from a battle
+                            if engaged_To_Enemy != True:
+                                print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                                with open('log.txt', 'a') as f:
+                                    f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                                return (True, "move")
+                            elif engaged_To_Enemy == True and allie_Present == True:
+                                print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent")
                                 return (False, "")
-                        #Checks if the unit type is Tech or Virus which can move freely    
-                        elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
-                            print("- ", Current_Player_Type,src_unit_type, " move is Valid")
-                            with open('log.txt', 'a') as f:
-                                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
-                            return (True, "move")
+                        else:
+                            print("-[Error] ", Current_Player_Type , src_unit_type," Can only move up or left")
+                            return (False, "")
+                    #Checks if the unit type is Tech or Virus which can move freely    
+                    elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                        print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                        with open('log.txt', 'a') as f:
+                            f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                        return (True, "move")
                     
                     #If current player is a Defender
                     if Current_Player_Type == "Defender":
