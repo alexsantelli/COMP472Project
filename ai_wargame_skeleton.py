@@ -308,7 +308,14 @@ class Game:
             target.mod_health(health_delta)
             self.remove_dead(coord)
 
+<<<<<<< Updated upstream
     
+=======
+    def is_valid_move(self, coords : CoordPair) -> bool:
+        """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
+        #For testing only
+        #print("[Enter is_valid_move def]")
+>>>>>>> Stashed changes
 
     def is_valid_move(self, coords : CoordPair) -> Tuple[bool, str]:
         """Validate a move expressed as a CoordPair. TODO: WRITE MISSING CODE!!!"""
@@ -322,6 +329,8 @@ class Game:
         unit2 = self.get(coords.dst)
         #Normal move, checks if space is empty for unit to move to
         if unit2 is None:
+            with open('log.txt', 'a') as f:
+                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
             return (True, "move")
         #Attack or Repair or incorrect move
         else:
@@ -329,10 +338,16 @@ class Game:
             dst_unit_type = self.get(coords.dst).type
             #Check if its attack (two adjacent players are opposing)
             if unit1.player.name != unit2.player.name:
+                with open('log.txt', 'a') as f:
+                    f.write(str(unit1) + " attacked " + str(unit2) + "\n\n")
                 return (True, "attack")
             if (self.get(coords.dst).health < 9) and ((src_unit_type == UnitType.AI and dst_unit_type == UnitType.Virus ) or (src_unit_type == UnitType.AI and dst_unit_type == UnitType.Tech) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.AI) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Firewall) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Program)):
+                with open('log.txt', 'a') as f:
+                    f.write(str(unit1) + " repaired " + str(unit2) + "\n\n")
                 return (True, "repair")
             if self.get(coords.src) == self.get(coords.dst):
+                with open('log.txt', 'a') as f:
+                    f.write(str(unit1) + " self-destructed" + "\n\n")
                 return (True, "self-destruct")
             else:
                 return (False, "")
@@ -358,7 +373,13 @@ class Game:
         elif (value1 == True and value2 == "repair"):
             self.mod_health(coords.dst, unit1.repair_amount(target))
             return (True,"")
-        #add self destruct
+        elif (value1 == True and value2 == "self-destruct"):
+            self.mod_health(coords.src, -9)
+            for coord in coords.src.iter_range(1):
+                if self.get(coord) is not None:
+                    self.mod_health(coord, -2)
+                self.remove_dead(coord)
+            return (True, "")
         return (False,"invalid move")
     
         
@@ -601,13 +622,39 @@ def main():
     # create a new game
     game = Game(options=options)
 
+    # Game specifications
+    with open('log.txt', 'a') as f:
+            f.write("Timeout: " + str(options.max_time)+ " seconds\n")
+            if (options.game_type.value == 0):
+                f.write("Play mode: Player 1 = H & Player 2 = H\n")
+            elif (options.game_type.value == 1):
+                f.write("Play mode: Player 1 = H & Player 2 = AI\n")
+            elif (options.game_type.value == 2):
+                f.write("Play mode: Player 1 = AI & Player 2 = H\n")
+            elif (options.game_type.value == 3):
+                f.write("Play mode: Player 1 = AI & Player 2 = AI\n")
+            f.write(f"Maximum number of turns: {options.max_turns}\n")
+            f.write(f"Alpha-Beta: {options.alpha_beta}\n")
+
+    
+
     # the main game loop
     while True:
         print()
         print(game)
+
+        
+        # writing to output file (using append)
+        with open('log.txt', 'a') as f:
+            f.write(str(game) + "\n")
+        
+
         winner = game.has_winner()
+        end_turns = game.turns_played
         if winner is not None:
             print(f"{winner.name} wins!")
+            with open('log.txt', 'a') as f:
+                f.write(winner.name+" wins in "+ str(end_turns) + "\n\n")
             break
         if game.options.game_type == GameType.AttackerVsDefender:
             game.human_turn()
