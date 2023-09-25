@@ -70,8 +70,6 @@ class Unit:
         return self.health > 0
     def mod_health(self, health_delta : int):
         """Modify this unit's health by delta amount."""
-        #For Test only
-        #print("[Enter mod_health 1st def]")
         
         self.health += health_delta
         if self.health < 0:
@@ -365,7 +363,7 @@ class Game:
                         if dst_coord.row < coords.src.row or dst_coord.col < coords.src.col:
                             #Ensure that player is not engaged from a battle
                             if engaged_To_Enemy != True:
-                                with open('log.txt', 'a') as f:
+                                with open(FILENAME, 'a') as f:
                                     f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                 return (True, "move")
                             elif engaged_To_Enemy == True and allie_Present == True:
@@ -380,7 +378,7 @@ class Game:
                     #Checks if the unit type is Tech or Virus which can move freely    
                     elif (src_unit_type == UnitType.Tech or src_unit_type == UnitType.Virus):
                         print("- ", Current_Player_Type,src_unit_type, " move is Valid")
-                        with open('log.txt', 'a') as f:
+                        with open(FILENAME, 'a') as f:
                             f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                         return (True, "move")
                     print("Unit Type not Found")
@@ -395,7 +393,7 @@ class Game:
                             #Ensure that player is not engaged from a battle
                             #print("enemy: ", engaged_To_Enemy, ", ally: ", allie_Present) 
                             if engaged_To_Enemy != True:
-                                with open('log.txt', 'a') as f:
+                                with open(FILENAME, 'a') as f:
                                     f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                 return (True, "move")
                             elif engaged_To_Enemy == True and allie_Present == True:
@@ -408,7 +406,7 @@ class Game:
                             return (False, "")
                     #Checks if the unit type is Tech or Virus which can move freely    
                     elif (src_unit_type == UnitType.Tech or src_unit_type == UnitType.Virus):
-                        with open('log.txt', 'a') as f:
+                        with open(FILENAME, 'a') as f:
                             f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                         return (True, "move")
                     print("Unit Type not Found")
@@ -426,15 +424,15 @@ class Game:
             dst_unit_type = self.get(coords.dst).type
             #Check if its attack (two adjacent players are opposing)
             if unit1.player.name != unit2.player.name:
-                with open('log.txt', 'a') as f:
+                with open(FILENAME, 'a') as f:
                     f.write(str(unit1) + " attacked " + str(unit2) + "\n\n")
                 return (True, "attack")
             if (self.get(coords.dst).health < 9) and ((src_unit_type == UnitType.AI and dst_unit_type == UnitType.Virus ) or (src_unit_type == UnitType.AI and dst_unit_type == UnitType.Tech) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.AI) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Firewall) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Program)):
-                with open('log.txt', 'a') as f:
+                with open(FILENAME, 'a') as f:
                     f.write(str(unit1) + " repaired " + str(unit2) + "\n\n")
                 return (True, "repair")
             if self.get(coords.src) == self.get(coords.dst):
-                with open('log.txt', 'a') as f:
+                with open(FILENAME, 'a') as f:
                     f.write(str(unit1) + " self-destructed" + "\n\n")
                 return (True, "self-destruct")
             else:
@@ -717,8 +715,11 @@ def main():
     # create a new game
     game = Game(options=options)
 
+    #Naming log File
+    global FILENAME 
+    FILENAME = 'gameTrace-' + str(options.alpha_beta) + '-' + str(int(options.max_time)) + '-' + str(options.max_turns) + '.txt'
     # Game specifications
-    with open('log.txt', 'a') as f:
+    with open(FILENAME, 'w') as f:
             f.write("Timeout: " + str(options.max_time)+ " seconds\n")
             if (options.game_type.value == 0):
                 f.write("Play mode: Player 1 = H & Player 2 = H\n")
@@ -740,7 +741,7 @@ def main():
 
         
         # writing to output file (using append)
-        with open('log.txt', 'a') as f:
+        with open(FILENAME, 'a') as f:
             f.write(str(game) + "\n")
         
 
@@ -748,7 +749,7 @@ def main():
         end_turns = game.turns_played
         if winner is not None:
             print(f"{winner.name} wins!")
-            with open('log.txt', 'a') as f:
+            with open(FILENAME, 'a') as f:
                 f.write(winner.name+" wins in "+ str(end_turns) + "\n\n")
             break
         if game.options.game_type == GameType.AttackerVsDefender:
