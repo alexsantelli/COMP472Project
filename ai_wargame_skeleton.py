@@ -370,13 +370,13 @@ class Game:
                 adjacent_unit = self.get(coordinates)
                 if (adjacent_unit is not None and 
                     adjacent_unit.player != coordinate_Source.player and self.is_valid_coord(coordinates)):
-                    #print("test11:", self.get(coordinates))
-                    #print("test2:", adjacent_unit.player)
-                    #print("test3:", coordinate_Source.player)
+                    print("test11:", self.get(coordinates))
+                    print("test2:", adjacent_unit.player)
+                    print("test3:", coordinate_Source.player)
                     engaged_To_Enemy = True
                 elif adjacent_unit is not None and adjacent_unit.player == coordinate_Source.player:
                     allie_Present = True
-                    #print("enemy: ", engaged_To_Enemy, ", ally: ", allie_Present) 
+                    print("enemy: ", engaged_To_Enemy, ", ally: ", allie_Present) 
                     
 
             #If the total rows and columns is equal to 1 or 0
@@ -396,6 +396,8 @@ class Game:
                                 elif engaged_To_Enemy == True and allie_Present == True:
                                     print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent")
                                     return (False, "")
+                                else:
+                                    print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent (Else)")
                             else:
                                 print("-[Error] ", Current_Player_Type , src_unit_type," Can only move up or left")
                                 return (False, "")
@@ -421,6 +423,9 @@ class Game:
                                     return (True, "move")
                                 elif engaged_To_Enemy == True and allie_Present == True:
                                     print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent")
+                                    return (False, "")
+                                else:
+                                    print("-[Error] ", Current_Player_Type , src_unit_type, "must engage with opponent (Else)")
                                     return (False, "")
                             else:
                                 print("-[Error] ", Current_Player_Type , src_unit_type," Can only move down or right")
