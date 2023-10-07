@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from time import sleep
 from typing import Tuple, TypeVar, Type, Iterable, ClassVar
 import random
-#import requests
+import requests
 
 # maximum and minimum values for our heuristic scores (usually represents an end of game condition)
 MAX_HEURISTIC_SCORE = 2000000000
@@ -655,6 +655,13 @@ class Game:
         return None
 
 ##############################################################################################################
+def string_to_int(str) -> int:
+    try:
+        output = int(str)
+    except ValueError:
+        print("invalid Input. Enter Integer value\n")
+        return 5
+    return output
 
 def main():
     # parse command line arguments
@@ -668,17 +675,55 @@ def main():
     args = parser.parse_args()
 
     # parse the game type
-    if args.game_type == "attacker":
-        game_type = GameType.AttackerVsComp
-    elif args.game_type == "defender":
-        game_type = GameType.CompVsDefender
-    elif args.game_type == "manual":
-        game_type = GameType.AttackerVsDefender
-    else:
-        game_type = GameType.CompVsComp
-
+    
+    
+    while(1):
+        user_input = input("Please select Game Type  Enter\n 1: Attacker vs AI\n 2: Defender vs AI\n 3: Player vs Player\n 4: AI vs AI\n")
+        user_choice = string_to_int(user_input)
+        if user_choice == 1:
+            game_type = GameType.AttackerVsComp
+            break
+        elif user_choice == 2:
+            game_type = GameType.CompVsDefender
+            break
+        elif user_choice == 3:
+            game_type = GameType.AttackerVsDefender
+            break
+        elif user_choice == 4:
+            game_type = GameType.CompVsComp
+            break
     # set up game options
     options = Options(game_type=game_type)
+    
+    if game_type != GameType.AttackerVsDefender:
+        while(1):
+            user_input = input("Please enter Maximum Turns (Minumum 5): ")
+            user_choice = string_to_int(user_input)
+            if user_choice >=5:
+                options.max_turns = user_choice
+                break
+            else:
+                print("Error: Must be greater than 5\n")
+        while(1):
+            user_input = input("Please enter max Timeout for AI (Minumum 5): ")
+            user_choice = string_to_int(user_input)
+            if user_choice >=5:
+                options.max_time = user_choice
+                break
+            else:
+                print("Error: Must be greater than 5\n")
+        while(1):
+            user_input = input("Please enter 1 for Alpha Beta or 2 for Minimax: ")
+            user_choice = string_to_int(user_input)
+            if user_choice == 1:
+                options.alpha_beta = True
+                break
+            elif user_choice == 2:
+                options.alpha_beta = False
+            else:
+                print("Error: Please select 1 or 2\n")        
+
+
 
     # override class defaults via command line options
     if args.max_depth is not None:
