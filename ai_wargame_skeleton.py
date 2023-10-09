@@ -384,7 +384,7 @@ class Game:
                         else:
                             print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move down or right")
                             return (False, "")
-                                        #Checks if the unit type is Tech or Virus which can move freely    
+                #Checks if the unit type is Tech or Virus which can move freely    
                 elif (src_unit_type == UnitType.Tech or src_unit_type == UnitType.Virus):
                     print("- ", Current_Player_Type, src_unit_type.name, " move is Valid")
                     with open(FILENAME, 'a') as f:
@@ -413,7 +413,7 @@ class Game:
                     f.write(str(unit1) + " self-destructed" + "\n\n")
                 return (True, "self-destruct")
             else:
-                print("Error - Action/move type not Found")
+                #print("Error - Action/move type not Found")
                 return (False, "")
             
 
@@ -586,11 +586,90 @@ class Game:
             return (0, move_candidates[0], 1)
         else:
             return (0, None, 0)
+    
+
+    def units_amount(self, player: Player) -> Tuple[int, int, int, int, int]:
+        VP = 0
+        TP = 0
+        FP = 0
+        PP = 0
+        AIP = 0
+
+        for (_,unit) in self.player_units(player):
+            if unit.type ==  UnitType.Virus:
+                VP += 1
+            elif unit.type ==  UnitType.Tech:
+                TP += 1
+            elif unit.type ==  UnitType.Firewall:
+                FP += 1
+            elif unit.type ==  UnitType.Program:
+                PP += 1
+            elif unit.type ==  UnitType.AI:
+                AIP += 1
+        return VP, TP, FP, PP, AIP
+
+    def e0_heuristic_eval(self) -> int:
+        VP1, TP1, FP1, PP1, AIP1 = self.units_amount(Player.Attacker)
+        VP2, TP2, FP2, PP2, AIP2 = self.units_amount(Player.Defender)
+
+        e0 = (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1) - (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2)
+        return e0
+
+            
+
+    def minimax(self, depth, min_player) -> Tuple(int, CoordPair):
+        #depth = self.options.max_depth
+        #base case for recursion
+        #TODO: define depth and evaluate() function
+        if self.is_finished() or depth == 0:
+            #print('minimax 1st IF statment = ', self.e0_heuristic_eval())
+            return self.e0_heuristic_eval(), None #should return the evaluated function and None
+        
+        if (depth == self.options.max_depth): # so this initialization only happens once
+            best_score = 0
+            best_move = None
+
+        #min player plays first
+        if min_player:
+            #best_score = float('inf') #to ensure first evaluated move is always considered an improvement
+            best_move = None
+            best_score = MIN_HEURISTIC_SCORE
+            score = self.e0_heuristic_eval()
+
+            for move in list(self.move_candidates()):
+                simulation_board = self.clone() #creating separate board for simulation
+                valid_move, _ = simulation_board.is_valid_move(move)
+                if valid_move:
+                    simulation_board.perform_move(move)
+                    score, _ = simulation_board.minimax(depth - 1, True)
+
+                if score < best_score:
+                    best_score = score
+                    best_move = move
+
+            return best_score, best_move
+    
+        else:
+            best_score =  MAX_HEURISTIC_SCORE
+            best_move = None
+
+            for move in list(self.move_candidates()):
+                simulation_board = self.clone() #creating separate board for simulation
+                simulation_board.perform_move(move)
+                score, _ = simulation_board.minimax(depth - 1, False)
+
+                if score > best_score:
+                    best_score = score
+                    best_move = move
+            return best_score, best_move
+    
 
     def suggest_move(self) -> CoordPair | None:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
         start_time = datetime.now()
-        (score, move, avg_depth) = self.random_move()
+        avg_depth = 1
+        #(score, move, avg_depth) = self.random_move() //Old skeleton logic
+        (score, move) = self.minimax(5,False)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
