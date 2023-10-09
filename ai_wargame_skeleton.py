@@ -363,10 +363,10 @@ class Game:
                                 return (True, "move")
                             else:
                                 #TODO: Get explanation
-                                print("-[Error] ", Current_Player_Type , src_unit_type.name, "must engage with opponent")
+                                #print("-[Error] ", Current_Player_Type , src_unit_type.name, "must engage with opponent")
                                 return (False, "")   
                         else:
-                            print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move up or left")
+                            #print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move up or left")
                             return (False, "")                
                     #If current player is a Defender
                     else:
@@ -379,21 +379,21 @@ class Game:
                                     f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                 return (True, "move")
                             else:
-                                print("-[Error] ", Current_Player_Type , src_unit_type.name, "must engage with opponent")
+                                #print("-[Error] ", Current_Player_Type , src_unit_type.name, "must engage with opponent")
                                 return (False, "")  
                         else:
-                            print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move down or right")
+                            #print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move down or right")
                             return (False, "")
                 #Checks if the unit type is Tech or Virus which can move freely    
                 elif (src_unit_type == UnitType.Tech or src_unit_type == UnitType.Virus):
-                    print("- ", Current_Player_Type, src_unit_type.name, " move is Valid")
+                    #print("- ", Current_Player_Type, src_unit_type.name, " move is Valid")
                     with open(FILENAME, 'a') as f:
                         f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                     return (True, "move")
-                print("Program Error - Unit Type not Found")
+                #print("Program Error - Unit Type not Found")
                 return (False, "")
             else:
-                print("Error - Invalid Move! 1 unit space can only be moved!")
+                #print("Error - Invalid Move! 1 unit space can only be moved!")
                 return (False, "")    
         #Attack or Repair or incorrect move
         else:
@@ -433,11 +433,11 @@ class Game:
         elif (boolean_Action == True and action == "attack"):
             self.mod_health(coords.dst, -current_Player.damage_amount(opponent))
             self.mod_health(coords.src, -opponent.damage_amount(current_Player))
-            print("Attack successful")
+            #print("Attack successful")
             return (True,"")
         elif (boolean_Action == True and action == "repair"):
             opponent.mod_health(current_Player.repair_amount(opponent))
-            print("Repair successful")
+            #print("Repair successful")
             return (True,"")
         # Self destruct not completed****
         elif (boolean_Action == True and action == "self-destruct"):
@@ -534,6 +534,7 @@ class Game:
     def computer_turn(self) -> CoordPair | None:
         """Computer plays a move."""
         print("[Enter computer_turn def]")
+        print("[Processing...]")
         mv = self.suggest_move()
         if mv is not None:
             (success,result) = self.perform_move(mv)
@@ -541,6 +542,8 @@ class Game:
                 print(f"Computer {self.next_player.name}: ",end='')
                 print(result)
                 self.next_turn()
+        else:
+            print("In [Enter computer_turn def], mv = ", mv)
         return mv
 
     def player_units(self, player: Player) -> Iterable[Tuple[Coord,Unit]]:
@@ -615,8 +618,6 @@ class Game:
         e0 = (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1) - (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2)
         return e0
 
-            
-
     def minimax(self, depth, min_player) -> Tuple(int, CoordPair):
         #depth = self.options.max_depth
         #base case for recursion
@@ -625,7 +626,9 @@ class Game:
             #print('minimax 1st IF statment = ', self.e0_heuristic_eval())
             return self.e0_heuristic_eval(), None #should return the evaluated function and None
         
+
         if (depth == self.options.max_depth): # so this initialization only happens once
+            #TODO refine it as I think it's not going into this IF statment intially.
             best_score = 0
             best_move = None
 
@@ -633,24 +636,29 @@ class Game:
         if min_player:
             #best_score = float('inf') #to ensure first evaluated move is always considered an improvement
             best_move = None
-            best_score = MIN_HEURISTIC_SCORE
+            #best_score = MIN_HEURISTIC_SCORE
+            best_score = 0
             score = self.e0_heuristic_eval()
 
             for move in list(self.move_candidates()):
                 simulation_board = self.clone() #creating separate board for simulation
                 valid_move, _ = simulation_board.is_valid_move(move)
+                #print("Is Valid_Move = ", valid_move)
                 if valid_move:
                     simulation_board.perform_move(move)
                     score, _ = simulation_board.minimax(depth - 1, True)
+                    #print("Min Score: ", score)
+                    #print("Move: ", move)
 
-                if score < best_score:
-                    best_score = score
-                    best_move = move
+                    if score < best_score:
+                        best_score = score
+                        best_move = move
+                        #print("Best Move: ", best_move)
 
             return best_score, best_move
     
         else:
-            best_score =  MAX_HEURISTIC_SCORE
+            #best_score =  MAX_HEURISTIC_SCORE
             best_move = None
 
             for move in list(self.move_candidates()):
@@ -667,9 +675,10 @@ class Game:
     def suggest_move(self) -> CoordPair | None:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
         start_time = datetime.now()
+        depth = self.options.max_depth
         avg_depth = 1
         #(score, move, avg_depth) = self.random_move() //Old skeleton logic
-        (score, move) = self.minimax(5,False)
+        (score, move) = self.minimax(depth,True)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
@@ -799,6 +808,7 @@ def main():
                 break
             elif user_choice == 2:
                 options.alpha_beta = False
+                break
             else:
                 print("Error: Please select 1 or 2\n")        
 
