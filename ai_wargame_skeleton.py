@@ -1,4 +1,4 @@
-#Will Branch
+#Will's Branch
 
 from __future__ import annotations
 import argparse
@@ -362,12 +362,15 @@ class Game:
                                     f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                 return (True, "move")
                             else:
-                                #TODO: Get explanation
-                                print("-[Error] ", Current_Player_Type , src_unit_type.name, "must engage with opponent")
-                                return (False, "")   
-                        else:
-                            print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move up or left")
-                            return (False, "")                
+                                print("-[Error] ", Current_Player_Type , src_unit_type," Can only move up or left")
+                                return (False, "")
+                        #Checks if the unit type is Tech or Virus which can move freely    
+                        elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                            print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                            with open('log.txt', 'a') as f:
+                                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                            return (True, "move")
+                    
                     #If current player is a Defender
                     else:
                         #Validates if the move can be performed based on their player Type.
@@ -379,22 +382,17 @@ class Game:
                                     f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                 return (True, "move")
                             else:
-                                print("-[Error] ", Current_Player_Type , src_unit_type.name, "must engage with opponent")
-                                return (False, "")  
-                        else:
-                            print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move down or right")
-                            return (False, "")
-                                        #Checks if the unit type is Tech or Virus which can move freely    
-                elif (src_unit_type == UnitType.Tech or src_unit_type == UnitType.Virus):
-                    print("- ", Current_Player_Type, src_unit_type.name, " move is Valid")
-                    with open(FILENAME, 'a') as f:
-                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
-                    return (True, "move")
-                print("Program Error - Unit Type not Found")
-                return (False, "")
+                                print("-[Error] ", Current_Player_Type , src_unit_type," Can only move down or right")
+                                return (False, "")
+                        #Checks if the unit type is Tech or Virus which can move freely    
+                        elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                            with open('log.txt', 'a') as f:
+                                f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                            return (True, "move")
             else:
-                print("Error - Invalid Move! 1 unit space can only be moved!")
-                return (False, "")    
+                print("-[Error] Invalid Move! 1 unit space can only be moved!")
+                return (False, "")
+                
         #Attack or Repair or incorrect move
         else:
             src_unit_type = self.get(coords.src).type
@@ -413,7 +411,6 @@ class Game:
                     f.write(str(unit1) + " self-destructed" + "\n\n")
                 return (True, "self-destruct")
             else:
-                print("Error - Action/move type not Found")
                 return (False, "")
             
 
@@ -433,11 +430,11 @@ class Game:
         elif (boolean_Action == True and action == "attack"):
             self.mod_health(coords.dst, -current_Player.damage_amount(opponent))
             self.mod_health(coords.src, -opponent.damage_amount(current_Player))
-            print("Attack successful")
+            #print("Attack successful")
             return (True,"")
         elif (boolean_Action == True and action == "repair"):
             opponent.mod_health(current_Player.repair_amount(opponent))
-            print("Repair successful")
+            #print("Repair successful")
             return (True,"")
         # Self destruct not completed****
         elif (boolean_Action == True and action == "self-destruct"):
@@ -534,6 +531,7 @@ class Game:
     def computer_turn(self) -> CoordPair | None:
         """Computer plays a move."""
         print("[Enter computer_turn def]")
+        print("[Processing...]")
         mv = self.suggest_move()
         if mv is not None:
             (success,result) = self.perform_move(mv)
@@ -541,6 +539,8 @@ class Game:
                 print(f"Computer {self.next_player.name}: ",end='')
                 print(result)
                 self.next_turn()
+        else:
+            print("In [Enter computer_turn def], mv = ", mv)
         return mv
 
     def player_units(self, player: Player) -> Iterable[Tuple[Coord,Unit]]:
@@ -586,11 +586,96 @@ class Game:
             return (0, move_candidates[0], 1)
         else:
             return (0, None, 0)
+    
+
+    def units_amount(self, player: Player) -> Tuple[int, int, int, int, int]:
+        VP = 0
+        TP = 0
+        FP = 0
+        PP = 0
+        AIP = 0
+
+        for (_,unit) in self.player_units(player):
+            if unit.type ==  UnitType.Virus:
+                VP += 1
+            elif unit.type ==  UnitType.Tech:
+                TP += 1
+            elif unit.type ==  UnitType.Firewall:
+                FP += 1
+            elif unit.type ==  UnitType.Program:
+                PP += 1
+            elif unit.type ==  UnitType.AI:
+                AIP += 1
+        return VP, TP, FP, PP, AIP
+
+    def e0_heuristic_eval(self) -> int:
+        VP1, TP1, FP1, PP1, AIP1 = self.units_amount(Player.Attacker)
+        VP2, TP2, FP2, PP2, AIP2 = self.units_amount(Player.Defender)
+
+        e0 = (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1) - (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2)
+        return e0
+
+    def minimax(self, depth, min_player) -> Tuple(int, CoordPair):
+        #depth = self.options.max_depth
+        #base case for recursion
+        #TODO: define depth and evaluate() function
+        if self.is_finished() or depth == 0:
+            #print('minimax 1st IF statment = ', self.e0_heuristic_eval())
+            return self.e0_heuristic_eval(), None #should return the evaluated function and None
+        
+
+        if (depth == self.options.max_depth): # so this initialization only happens once
+            #TODO refine it as I think it's not going into this IF statment intially.
+            best_score = 0
+            best_move = None
+
+        #min player plays first
+        if min_player:
+            #best_score = float('inf') #to ensure first evaluated move is always considered an improvement
+            best_move = None
+            #best_score = MIN_HEURISTIC_SCORE
+            best_score = 0
+            score = self.e0_heuristic_eval()
+
+            for move in list(self.move_candidates()):
+                simulation_board = self.clone() #creating separate board for simulation
+                valid_move, _ = simulation_board.is_valid_move(move)
+                #print("Is Valid_Move = ", valid_move)
+                if valid_move:
+                    simulation_board.perform_move(move)
+                    score, _ = simulation_board.minimax(depth - 1, True)
+                    #print("Min Score: ", score)
+                    #print("Move: ", move)
+
+                    if score < best_score:
+                        best_score = score
+                        best_move = move
+                        #print("Best Move: ", best_move)
+
+            return best_score, best_move
+    
+        else:
+            #best_score =  MAX_HEURISTIC_SCORE
+            best_move = None
+
+            for move in list(self.move_candidates()):
+                simulation_board = self.clone() #creating separate board for simulation
+                simulation_board.perform_move(move)
+                score, _ = simulation_board.minimax(depth - 1, False)
+
+                if score > best_score:
+                    best_score = score
+                    best_move = move
+            return best_score, best_move
+    
 
     def suggest_move(self) -> CoordPair | None:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
         start_time = datetime.now()
-        (score, move, avg_depth) = self.random_move()
+        depth = self.options.max_depth
+        avg_depth = 1
+        #(score, move, avg_depth) = self.random_move() //Old skeleton logic
+        (score, move) = self.minimax(depth,True)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
@@ -694,36 +779,6 @@ def main():
             break
     # set up game options
     options = Options(game_type=game_type)
-    
-    if game_type != GameType.AttackerVsDefender:
-        while(1):
-            user_input = input("Please enter Maximum Turns (Minumum 5): ")
-            user_choice = string_to_int(user_input)
-            if user_choice >=5:
-                options.max_turns = user_choice
-                break
-            else:
-                print("Error: Must be greater than 5\n")
-        while(1):
-            user_input = input("Please enter max Timeout for AI (Minumum 5): ")
-            user_choice = string_to_int(user_input)
-            if user_choice >=5:
-                options.max_time = user_choice
-                break
-            else:
-                print("Error: Must be greater than 5\n")
-        while(1):
-            user_input = input("Please enter 1 for Alpha Beta or 2 for Minimax: ")
-            user_choice = string_to_int(user_input)
-            if user_choice == 1:
-                options.alpha_beta = True
-                break
-            elif user_choice == 2:
-                options.alpha_beta = False
-            else:
-                print("Error: Please select 1 or 2\n")        
-
-
 
     # override class defaults via command line options
     if args.max_depth is not None:
