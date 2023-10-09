@@ -65,6 +65,7 @@ class Unit:
         [0,0,0,0,0], # Firewall
     ]
 
+
     def is_alive(self) -> bool:
         """Are we alive ?"""
         return self.health > 0
@@ -239,6 +240,11 @@ class Stats:
 
 ##############################################################################################################
 
+global attacker_board_health
+attacker_board_health : int = 54
+global defender_board_health
+defender_board_health : int = 54
+
 @dataclass(slots=True)
 class Game:
     """Representation of the game state."""
@@ -249,6 +255,7 @@ class Game:
     stats: Stats = field(default_factory=Stats)
     _attacker_has_ai : bool = True
     _defender_has_ai : bool = True
+    
 
     def __post_init__(self):
         """Automatically called after class init to set up the default board state."""
@@ -310,6 +317,18 @@ class Game:
         if target is not None:
             target.mod_health(health_delta)
             self.remove_dead(coord)
+            """if health_delta >= 0:
+                if target.player.name == "Attacker":
+                    attacker_board_health = attacker_board_health - health_delta
+                elif target.player.name == "Defender":
+                    defender_board_health = defender_board_health - health_delta
+            else:
+                if target.player.name == "Attacker":
+                    attacker_board_health = attacker_board_health + health_delta
+                elif target.player.name == "Defender":
+                    defender_board_health = defender_board_health + health_delta"""
+
+    
 
 
     def is_valid_move(self, coords : CoordPair)  -> Tuple[bool, str]:
@@ -564,6 +583,82 @@ class Game:
             else:
                 return Player.Attacker    
         return Player.Defender
+    
+    """def evaluate(self) -> int:
+        return attacker_board_health - defender_board_health"""
+
+    def units_amount(self, player: Player) -> Tuple[int, int, int, int, int]:
+        VP = 0
+        TP = 0
+        FP = 0
+        PP = 0
+        AIP = 0
+
+        for (_,unit) in self.player_units(player):
+            if unit.type == UnitType.Virus:
+                VP += 1
+            elif unit.type == UnitType.Tech:
+                TP += 1
+            elif unit.type == UnitType.Firewall:
+                FP += 1
+            elif unit.type == UnitType.Program:
+                PP += 1
+            elif unit.type == UnitType.AI:
+                AIP += 1
+        
+        return VP, TP, FP, PP, AIP
+    
+    def e0_heuristic_eval(self) -> int:
+        VP1, TP1, FP1, PP1, AIP1 = self.units_amount(Player.Attacker)
+        VP2, TP2, FP2, PP2, AIP2 = self.units_amount(Player.Defender)
+
+        e0 = (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1) - (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2)
+        return e0
+    
+    def minimax(self, depth, min_player) -> Tuple(int, CoordPair):
+        #depth = self.options.max_depth
+        #base case for recursion
+        #TODO: define depth and evaluate() function
+        if self.is_finished() or depth == 0:
+            return self.e0_heuristic_eval(), None #should return the evaluated function and None
+        
+        if (depth == self.options.max_depth): # so this initialization only happens once
+            best_score = 0
+            best_move = None
+
+        #min player plays first
+        if min_player:
+            #best_score = float('inf') #to ensure first evaluated move is always considered an improvement
+            #best_move = None
+            score = self.e0_heuristic_eval()
+
+            for move in list(self.move_candidates()):
+                simulation_board = self.clone() #creating separate board for simulation
+                valid_move, _ = simulation_board.is_valid_move(move)
+                if valid_move:
+                    simulation_board.perform_move(move)
+                    score, _ = simulation_board.minimax(depth - 1, True)
+
+                if score < best_score:
+                    best_score = score
+                    best_move = move
+
+            return best_score, best_move
+    
+        else:
+            #best_score = float('-inf')
+            #best_move = None
+
+            for move in list(self.move_candidates()):
+                simulation_board = self.clone() #creating separate board for simulation
+                simulation_board.perform_move(move)
+                score, _ = simulation_board.minimax(depth - 1, False)
+
+                if score > best_score:
+                    best_score = score
+                    best_move = move
+            return best_score, best_move
+    
 
 
     def move_candidates(self) -> Iterable[CoordPair]:
@@ -573,24 +668,39 @@ class Game:
             move.src = src
             for dst in src.iter_adjacent():
                 move.dst = dst
-                if self.is_valid_move(move):
+                valid_move, _ = self.is_valid_move(move)
+                if valid_move:
                     yield move.clone()
             move.dst = src
             yield move.clone()
 
     def random_move(self) -> Tuple[int, CoordPair | None, float]:
         """Returns a random move."""
-        move_candidates = list(self.move_candidates())
+        depth = self.options.max_depth
+        #FOR TESTING
+        self.options.alpha_beta = False
+
+        if self.options.alpha_beta:
+            return 1
+        #minimax
+        else:
+            #self.minimax(depth, True)
+            return self.minimax(depth, True), depth
+            #checking = self.minimax(depth, True)
+            #return 1
+        """move_candidates = list(self.move_candidates())
         random.shuffle(move_candidates)
         if len(move_candidates) > 0:
             return (0, move_candidates[0], 1)
         else:
-            return (0, None, 0)
+            return (0, None, 0)"""
 
     def suggest_move(self) -> CoordPair | None:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
         start_time = datetime.now()
-        (score, move, avg_depth) = self.random_move()
+        #(score, move, avg_depth) = self.random_move()
+        avg_depth = 1
+        (score, move) = self.random_move()
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
@@ -712,7 +822,7 @@ def main():
                 break
             else:
                 print("Error: Must be greater than 5\n")
-        while(1):
+        """while(1):
             user_input = input("Please enter 1 for Alpha Beta or 2 for Minimax: ")
             user_choice = string_to_int(user_input)
             if user_choice == 1:
@@ -721,7 +831,7 @@ def main():
             elif user_choice == 2:
                 options.alpha_beta = False
             else:
-                print("Error: Please select 1 or 2\n")        
+                print("Error: Please select 1 or 2\n") """       
 
 
 
