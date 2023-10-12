@@ -64,6 +64,9 @@ class Unit:
         [0,0,0,0,0], # Firewall
     ]
 
+    def get_health(self) -> int:
+        return self.health
+
 
     def is_alive(self) -> bool:
         """Are we alive ?"""
@@ -238,11 +241,6 @@ class Stats:
     total_seconds: float = 0.0
 
 ##############################################################################################################
-
-global attacker_board_health
-attacker_board_health : int = 54
-global defender_board_health
-defender_board_health : int = 54
 
 @dataclass(slots=True)
 class Game:
@@ -619,9 +617,44 @@ class Game:
             e0 = (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2) - (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1)
         return e0
     
+    def e2_heuristic_eval(self) -> int:
+        VP1_health, VP2_health, TP1_health, TP2_health, FP1_health, FP2_health, PP1_health, PP2_health, AIP1_health, AIP2_health = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+        for (_,unit) in self.player_units(Player.Attacker):
+            if unit.type == UnitType.Virus:
+                VP1_health += unit.get_health()
+            elif unit.type == UnitType.Tech:
+                TP1_health += unit.get_health()
+            elif unit.type == UnitType.Firewall:
+                FP1_health += unit.get_health()
+            elif unit.type == UnitType.Program:
+                PP1_health += unit.get_health()
+            elif unit.type == UnitType.AI:
+                AIP1_health += unit.get_health()
+            
+        for (_,unit) in self.player_units(Player.Defender):
+            if unit.type == UnitType.Virus:
+                VP2_health += unit.get_health()
+            elif unit.type == UnitType.Tech:
+                TP2_health += unit.get_health()
+            elif unit.type == UnitType.Firewall:
+                FP2_health += unit.get_health()
+            elif unit.type == UnitType.Program:
+                PP2_health += unit.get_health()
+            elif unit.type == UnitType.AI:
+                AIP2_health += unit.get_health()
+
+        if self.next_player == Player.Attacker:
+            e2 = (20*VP1_health + 10*TP1_health + 1*FP1_health + 1*PP1_health + 999*AIP1_health) - (20*VP2_health + 10*TP2_health + 1*FP2_health + 1*PP2_health + 999*AIP2_health)
+        else:
+            e2 = (20*VP2_health + 10*TP2_health + 1*FP2_health + 1*PP2_health + 999*AIP2_health) - (20*VP1_health + 10*TP1_health + 1*FP1_health + 1*PP1_health + 999*AIP1_health)
+        return e2
+
+
+    
     def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
         if depth == 0:
-            return self.e0_heuristic_eval(), None
+            return self.e2_heuristic_eval(), None
         
         
         best_move = None
@@ -654,7 +687,7 @@ class Game:
     
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
         if depth == 0:
-            return self.e0_heuristic_eval(), None
+            return self.e2_heuristic_eval(), None
         
         
         best_move = None
