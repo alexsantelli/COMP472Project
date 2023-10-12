@@ -579,31 +579,38 @@ class Game:
             else:
                 return Player.Attacker    
         return Player.Defender
-
-    def units_amount(self, player: Player) -> Tuple[int, int, int, int, int]:
-        VP = 0
-        TP = 0
-        FP = 0
-        PP = 0
-        AIP = 0
-
-        for (_,unit) in self.player_units(player):
-            if unit.type == UnitType.Virus:
-                VP += 1
-            elif unit.type == UnitType.Tech:
-                TP += 1
-            elif unit.type == UnitType.Firewall:
-                FP += 1
-            elif unit.type == UnitType.Program:
-                PP += 1
-            elif unit.type == UnitType.AI:
-                AIP += 1
-        
-        return VP, TP, FP, PP, AIP
     
     def e0_heuristic_eval(self) -> int:
-        VP1, TP1, FP1, PP1, AIP1 = self.units_amount(Player.Attacker)
-        VP2, TP2, FP2, PP2, AIP2 = self.units_amount(Player.Defender)
+        VP1, VP2 = 0, 0
+        TP1, TP2 = 0, 0
+        FP1, FP2 = 0, 0
+        PP1, PP2 = 0, 0
+        AIP1, AIP2 = 0, 0
+
+        
+        for (_,unit) in self.player_units(Player.Attacker):
+            if unit.type == UnitType.Virus:
+                VP1 += 1
+            elif unit.type == UnitType.Tech:
+                TP1 += 1
+            elif unit.type == UnitType.Firewall:
+                FP1 += 1
+            elif unit.type == UnitType.Program:
+                PP1 += 1
+            elif unit.type == UnitType.AI:
+                AIP1 += 1
+
+        for (_,unit) in self.player_units(Player.Defender):
+            if unit.type == UnitType.Virus:
+                VP2 += 1
+            elif unit.type == UnitType.Tech:
+                TP2 += 1
+            elif unit.type == UnitType.Firewall:
+                FP2 += 1
+            elif unit.type == UnitType.Program:
+                PP2 += 1
+            elif unit.type == UnitType.AI:
+                AIP2 += 1
         
         #Checks which player is playing next and must try to minimize
         if self.next_player == Player.Attacker:
@@ -612,49 +619,38 @@ class Game:
             e0 = (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2) - (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1)
         return e0
     
-    def minimax(self, depth, min_player) -> Tuple(int, CoordPair):
-        #depth = self.options.max_depth
-        #base case for recursion
-        #TODO: define depth and evaluate() function
-        if self.is_finished() or depth == 0:
-            return self.e0_heuristic_eval(), None #should return the evaluated function and None
+    def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
+        if depth == 0:
+            return self.e0_heuristic_eval(), None
         
-        if (depth == self.options.max_depth): # so this initialization only happens once
-            best_score = 0
-            best_move = None
+        
+        best_move = None
+        if maximizing_player:
 
-        #min player plays first
-        if min_player:
-            #best_score = float('inf') #to ensure first evaluated move is always considered an improvement
-            #best_move = None
-            score = self.e0_heuristic_eval()
-
-            for move in list(self.move_candidates()):
-                simulation_board = self.clone() #creating separate board for simulation
-                valid_move, _ = simulation_board.is_valid_move(move)
-                if valid_move:
-                    simulation_board.perform_move(move)
-                    score, _ = simulation_board.minimax(depth - 1, True)
-
-                if score < best_score:
-                    best_score = score
-                    best_move = move
-
-            return best_score, best_move
-    
-        else:
-            #best_score = float('-inf')
-            #best_move = None
-
-            for move in list(self.move_candidates()):
-                simulation_board = self.clone() #creating separate board for simulation
+            max_eval = MIN_HEURISTIC_SCORE
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
                 simulation_board.perform_move(move)
-                score, _ = simulation_board.minimax(depth - 1, False)
-
-                if score > best_score:
-                    best_score = score
+                eval, _ = simulation_board.minimax(depth - 1, False)
+                
+                if eval > max_eval:
+                    max_eval = eval
                     best_move = move
-            return best_score, best_move
+
+            return max_eval, best_move
+        else:
+            min_eval = MAX_HEURISTIC_SCORE
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval, _ = simulation_board.minimax(depth - 1, True)
+                if eval < min_eval:
+                    min_eval = eval
+                    best_move = move
+
+            return min_eval, best_move
     
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
         if depth == 0:
@@ -664,7 +660,7 @@ class Game:
         best_move = None
         if maximizing_player:
 
-            max_eval = float("-inf")
+            max_eval = MIN_HEURISTIC_SCORE
             for move in self.move_candidates():
                 simulation_board = self.clone()
                 simulation_board.simulation = True
@@ -680,7 +676,7 @@ class Game:
                     break  # Prune the branch
             return max_eval, best_move
         else:
-            min_eval = float("inf")
+            min_eval = MAX_HEURISTIC_SCORE
             for move in self.move_candidates():
                 simulation_board = self.clone()
                 simulation_board.simulation = True
@@ -711,8 +707,9 @@ class Game:
     def suggest_move(self) -> CoordPair | None:
         #Suggest the next move using minimax alpha beta.
         start_time = datetime.now()
+        #TODO: return avg depth in minimax & alpha-beta
         if Options.alpha_beta:
-            (score, move) = self.alphabeta(self.options.max_depth, float('-inf'), float('inf'), True )
+            (score, move) = self.alphabeta(self.options.max_depth, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE, True )
         else:
             (score, move) = self.minimax(self.options.max_depth, True)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
