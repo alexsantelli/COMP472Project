@@ -657,7 +657,7 @@ class Game:
             return best_score, best_move
     
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
-        if depth == 0 or self.is_finished():
+        if depth == 0:
             return self.e0_heuristic_eval(), None
         
         
@@ -668,9 +668,6 @@ class Game:
             for move in self.move_candidates():
                 simulation_board = self.clone()
                 simulation_board.simulation = True
-                #Blocking AI unit from killing itself
-                if move.dst == move.src and self.get(move.src).type == UnitType.AI:
-                    continue
                 simulation_board.perform_move(move)
                 eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
                 
@@ -687,9 +684,6 @@ class Game:
             for move in self.move_candidates():
                 simulation_board = self.clone()
                 simulation_board.simulation = True
-                #Blocking AI unit from killing itself
-                if move.dst == move.src and self.get(move.src).type == UnitType.AI:
-                     continue
                 simulation_board.perform_move(move)
                 eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
                 if eval < min_eval:
