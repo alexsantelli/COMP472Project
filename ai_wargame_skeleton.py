@@ -1,4 +1,3 @@
-#Will Branch
 
 from __future__ import annotations
 import argparse
@@ -14,7 +13,7 @@ import requests
 # maximum and minimum values for our heuristic scores (usually represents an end of game condition)
 MAX_HEURISTIC_SCORE = 2000000000
 MIN_HEURISTIC_SCORE = -2000000000
-
+MAX_TURNS = 10
 class UnitType(Enum):
     """Every unit type."""
     AI = 0
@@ -64,6 +63,7 @@ class Unit:
         [0,0,0,0,0], # Program
         [0,0,0,0,0], # Firewall
     ]
+
 
     def is_alive(self) -> bool:
         """Are we alive ?"""
@@ -239,6 +239,11 @@ class Stats:
 
 ##############################################################################################################
 
+global attacker_board_health
+attacker_board_health : int = 54
+global defender_board_health
+defender_board_health : int = 54
+
 @dataclass(slots=True)
 class Game:
     """Representation of the game state."""
@@ -249,6 +254,8 @@ class Game:
     stats: Stats = field(default_factory=Stats)
     _attacker_has_ai : bool = True
     _defender_has_ai : bool = True
+    simulation: bool = False
+    
 
     def __post_init__(self):
         """Automatically called after class init to set up the default board state."""
@@ -310,8 +317,7 @@ class Game:
         if target is not None:
             target.mod_health(health_delta)
             self.remove_dead(coord)
-
-
+            
     def is_valid_move(self, coords : CoordPair)  -> Tuple[bool, str]:
         """Validate a move expressed as a CoordPair."""
         
@@ -358,65 +364,72 @@ class Game:
                         if dst_coord.row < coords.src.row or dst_coord.col < coords.src.col:
                             #Ensure that player is not engaged from a battle
                             if engaged_To_Enemy != True:
-                                with open(FILENAME, 'a') as f:
-                                    f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                                if self.simulation != True:
+                                    with open(FILENAME, 'a') as f:
+                                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                 return (True, "move")
                             else:
-                                #TODO: Get explanation
-                                print("-[Error] ", Current_Player_Type , src_unit_type.name, "must engage with opponent")
-                                return (False, "")   
-                        else:
-                            print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move up or left")
-                            return (False, "")                
+                                if self.simulation != True:
+                                    print("-[Error] ", Current_Player_Type , src_unit_type," Can only move up or left")
+                                return (False, "")
+                        #Checks if the unit type is Tech or Virus which can move freely    
+                        elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                            #Will not write if it is simulation
+                            if self.simulation != True:
+                                print("- ", Current_Player_Type,src_unit_type, " move is Valid")
+                                with open('log.txt', 'a') as f:
+                                    f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                            return (True, "move")
+                    
                     #If current player is a Defender
                     else:
                         #Validates if the move can be performed based on their player Type.
                         if dst_coord.row > coords.src.row or dst_coord.col > coords.src.col:
                             #Ensure that player is not engaged from a battle
-                            #print("enemy: ", engaged_To_Enemy, ", ally: ", allie_Present) 
                             if engaged_To_Enemy != True:
-                                with open(FILENAME, 'a') as f:
-                                    f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                                if self.simulation != True:
+                                    with open(FILENAME, 'a') as f:
+                                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
                                 return (True, "move")
                             else:
-                                print("-[Error] ", Current_Player_Type , src_unit_type.name, "must engage with opponent")
-                                return (False, "")  
-                        else:
-                            print("-[Error] ", Current_Player_Type , src_unit_type.name," Can only move down or right")
-                            return (False, "")
-                                        #Checks if the unit type is Tech or Virus which can move freely    
-                elif (src_unit_type == UnitType.Tech or src_unit_type == UnitType.Virus):
-                    print("- ", Current_Player_Type, src_unit_type.name, " move is Valid")
-                    with open(FILENAME, 'a') as f:
-                        f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
-                    return (True, "move")
-                print("Program Error - Unit Type not Found")
-                return (False, "")
+                                if self.simulation != True:
+                                    print("-[Error] ", Current_Player_Type , src_unit_type," Can only move down or right")
+                                return (False, "")
+                        #Checks if the unit type is Tech or Virus which can move freely    
+                        elif (src_unit_type == "Tech" or src_unit_type == "Virus"):
+                            if self.simulation != True:
+                                with open('log.txt', 'a') as f:
+                                    f.write("move from " + str(coords.src) + " to " + str(coords.dst) + "\n\n")
+                            return (True, "move")
             else:
-                print("Error - Invalid Move! 1 unit space can only be moved!")
-                return (False, "")    
+                if self.simulation != True:
+                    print("-[Error] Invalid Move! 1 unit space can only be moved!")
+                return (False, "")
+                
         #Attack or Repair or incorrect move
         else:
             src_unit_type = self.get(coords.src).type
             dst_unit_type = self.get(coords.dst).type
             #Check if its attack (two adjacent players are opposing)
             if unit1.player.name != unit2.player.name:
-                with open(FILENAME, 'a') as f:
-                    f.write(str(unit1) + " attacked " + str(unit2) + "\n\n")
+                if self.simulation != True:
+                    with open(FILENAME, 'a') as f:
+                        f.write(str(unit1) + " attacked " + str(unit2) + "\n\n")
                 return (True, "attack")
             if (self.get(coords.dst).health < 9) and ((src_unit_type == UnitType.AI and dst_unit_type == UnitType.Virus ) or (src_unit_type == UnitType.AI and dst_unit_type == UnitType.Tech) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.AI) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Firewall) or (src_unit_type == UnitType.Tech and dst_unit_type == UnitType.Program)):
-                with open(FILENAME, 'a') as f:
-                    f.write(str(unit1) + " repaired " + str(unit2) + "\n\n")
+                if self.simulation != True:
+                    with open(FILENAME, 'a') as f:
+                        f.write(str(unit1) + " repaired " + str(unit2) + "\n\n")
                 return (True, "repair")
             if self.get(coords.src) == self.get(coords.dst):
-                with open(FILENAME, 'a') as f:
-                    f.write(str(unit1) + " self-destructed" + "\n\n")
+                if self.simulation != True:
+                    with open(FILENAME, 'a') as f:
+                        f.write(str(unit1) + " self-destructed" + "\n\n")
                 return (True, "self-destruct")
             else:
-                print("Error - Action/move type not Found")
                 return (False, "")
+        return (False, "")
             
-
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
         #test
         """Validate and perform a move expressed as a CoordPair."""
@@ -433,13 +446,10 @@ class Game:
         elif (boolean_Action == True and action == "attack"):
             self.mod_health(coords.dst, -current_Player.damage_amount(opponent))
             self.mod_health(coords.src, -opponent.damage_amount(current_Player))
-            print("Attack successful")
             return (True,"")
         elif (boolean_Action == True and action == "repair"):
             opponent.mod_health(current_Player.repair_amount(opponent))
-            print("Repair successful")
             return (True,"")
-        # Self destruct not completed****
         elif (boolean_Action == True and action == "self-destruct"):
             self.mod_health(coords.src, -9)
             for coord in coords.src.iter_range(1):
@@ -534,13 +544,18 @@ class Game:
     def computer_turn(self) -> CoordPair | None:
         """Computer plays a move."""
         print("[Enter computer_turn def]")
+        print("[Processing...]")
+        self.simulation = True
         mv = self.suggest_move()
+        self.simulation = False
         if mv is not None:
             (success,result) = self.perform_move(mv)
             if success:
                 print(f"Computer {self.next_player.name}: ",end='')
                 print(result)
                 self.next_turn()
+        else:
+            print("In [Enter computer_turn def], mv = ", mv)
         return mv
 
     def player_units(self, player: Player) -> Iterable[Tuple[Coord,Unit]]:
@@ -564,7 +579,117 @@ class Game:
             else:
                 return Player.Attacker    
         return Player.Defender
+    
+    def e0_heuristic_eval(self) -> int:
+        VP1, VP2 = 0, 0
+        TP1, TP2 = 0, 0
+        FP1, FP2 = 0, 0
+        PP1, PP2 = 0, 0
+        AIP1, AIP2 = 0, 0
 
+        
+        for (_,unit) in self.player_units(Player.Attacker):
+            if unit.type == UnitType.Virus:
+                VP1 += 1
+            elif unit.type == UnitType.Tech:
+                TP1 += 1
+            elif unit.type == UnitType.Firewall:
+                FP1 += 1
+            elif unit.type == UnitType.Program:
+                PP1 += 1
+            elif unit.type == UnitType.AI:
+                AIP1 += 1
+
+        for (_,unit) in self.player_units(Player.Defender):
+            if unit.type == UnitType.Virus:
+                VP2 += 1
+            elif unit.type == UnitType.Tech:
+                TP2 += 1
+            elif unit.type == UnitType.Firewall:
+                FP2 += 1
+            elif unit.type == UnitType.Program:
+                PP2 += 1
+            elif unit.type == UnitType.AI:
+                AIP2 += 1
+        
+        #Checks which player is playing next and must try to minimize
+        if self.next_player == Player.Attacker:
+            e0 = (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1) - (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2)
+        else:
+            e0 = (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2) - (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1)
+        return e0
+    
+    def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
+        if depth == 0:
+            return self.e0_heuristic_eval(), None
+        
+        
+        best_move = None
+        if maximizing_player:
+
+            max_eval = MIN_HEURISTIC_SCORE
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval, _ = simulation_board.minimax(depth - 1, False)
+                
+                if eval > max_eval:
+                    max_eval = eval
+                    best_move = move
+
+            return max_eval, best_move
+        else:
+            min_eval = MAX_HEURISTIC_SCORE
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval, _ = simulation_board.minimax(depth - 1, True)
+                if eval < min_eval:
+                    min_eval = eval
+                    best_move = move
+
+            return min_eval, best_move
+    
+    def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
+        if depth == 0:
+            return self.e0_heuristic_eval(), None
+        
+        
+        best_move = None
+        if maximizing_player:
+
+            max_eval = MIN_HEURISTIC_SCORE
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
+                
+                if eval > max_eval:
+                    max_eval = eval
+                    best_move = move
+                alpha = max(alpha, eval)
+                
+                if beta <= alpha:
+                    break  # Prune the branch
+            return max_eval, best_move
+        else:
+            min_eval = MAX_HEURISTIC_SCORE
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
+                if eval < min_eval:
+                    min_eval = eval
+                    best_move = move
+                beta = min(beta, eval)
+                
+                if beta <= alpha:
+                    break  # Prune the branch
+            return min_eval, best_move
 
     def move_candidates(self) -> Iterable[CoordPair]:
         """Generate valid move candidates for the next player."""
@@ -573,28 +698,24 @@ class Game:
             move.src = src
             for dst in src.iter_adjacent():
                 move.dst = dst
-                if self.is_valid_move(move):
+                valid, _ = self.is_valid_move(move)
+                if valid:
                     yield move.clone()
             move.dst = src
             yield move.clone()
 
-    def random_move(self) -> Tuple[int, CoordPair | None, float]:
-        """Returns a random move."""
-        move_candidates = list(self.move_candidates())
-        random.shuffle(move_candidates)
-        if len(move_candidates) > 0:
-            return (0, move_candidates[0], 1)
-        else:
-            return (0, None, 0)
-
     def suggest_move(self) -> CoordPair | None:
-        """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
+        #Suggest the next move using minimax alpha beta.
         start_time = datetime.now()
-        (score, move, avg_depth) = self.random_move()
+        #TODO: return avg depth in minimax & alpha-beta
+        if Options.alpha_beta:
+            (score, move) = self.alphabeta(self.options.max_depth, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE, True )
+        else:
+            (score, move) = self.minimax(self.options.max_depth, True)
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
-        print(f"Average recursive depth: {avg_depth:0.1f}")
+        #print(f"Average recursive depth: {avg_depth:0.1f}")
         print(f"Evals per depth: ",end='')
         for k in sorted(self.stats.evaluations_per_depth.keys()):
             print(f"{k}:{self.stats.evaluations_per_depth[k]} ",end='')
@@ -697,9 +818,9 @@ def main():
     
     if game_type != GameType.AttackerVsDefender:
         while(1):
-            user_input = input("Please enter Maximum Turns (Minumum 5): ")
+            user_input = input("Please enter Maximum Turns (Minumum 10): ")
             user_choice = string_to_int(user_input)
-            if user_choice >=5:
+            if user_choice >= MAX_TURNS:
                 options.max_turns = user_choice
                 break
             else:
@@ -720,6 +841,7 @@ def main():
                 break
             elif user_choice == 2:
                 options.alpha_beta = False
+                break
             else:
                 print("Error: Please select 1 or 2\n")        
 

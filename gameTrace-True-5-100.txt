@@ -1,0 +1,100 @@
+Timeout: 5.0 seconds
+Play mode: Player 1 = H & Player 2 = H
+Maximum number of turns: 100
+Alpha-Beta: True
+Next player: Attacker
+Turns played: 0
+
+    0   1   2   3   4  
+A: dA9 dT9 dF9  .   .  
+B: dT9 dP9  .   .   .  
+C: dF9  .   .   .  aP9 
+D:  .   .   .  aF9 aV9 
+E:  .   .  aP9 aV9 aA9 
+
+move from E2 to E1
+
+Next player: Defender
+Turns played: 1
+
+    0   1   2   3   4  
+A: dA9 dT9 dF9  .   .  
+B: dT9 dP9  .   .   .  
+C: dF9  .   .   .  aP9 
+D:  .   .   .  aF9 aV9 
+E:  .  aP9  .  aV9 aA9 
+
+move from C0 to C1
+
+Next player: Attacker
+Turns played: 2
+
+    0   1   2   3   4  
+A: dA9 dT9 dF9  .   .  
+B: dT9 dP9  .   .   .  
+C:  .  dF9  .   .  aP9 
+D:  .   .   .  aF9 aV9 
+E:  .  aP9  .  aV9 aA9 
+
+move from E1 to D1
+
+Next player: Defender
+Turns played: 3
+
+    0   1   2   3   4  
+A: dA9 dT9 dF9  .   .  
+B: dT9 dP9  .   .   .  
+C:  .  dF9  .   .  aP9 
+D:  .  aP9  .  aF9 aV9 
+E:  .   .   .  aV9 aA9 
+
+dF9 attacked aP9
+
+Next player: Attacker
+Turns played: 4
+
+    0   1   2   3   4  
+A: dA9 dT9 dF9  .   .  
+B: dT9 dP9  .   .   .  
+C:  .  dF8  .   .  aP9 
+D:  .  aP8  .  aF9 aV9 
+E:  .   .   .  aV9 aA9 
+
+aF9 self-destructed
+
+Next player: Defender
+Turns played: 5
+
+    0   1   2   3   4  
+A: dA9 dT9 dF9  .   .  
+B: dT9 dP9  .   .   .  
+C:  .  dF8  .   .  aP7 
+D:  .  aP8  .   .  aV7 
+E:  .   .   .  aV7 aA7 
+
+dF8 self-destructed
+
+Next player: Attacker
+Turns played: 6
+
+    0   1   2   3   4  
+A: dA9 dT9 dF9  .   .  
+B: dT7 dP7  .   .   .  
+C:  .   .   .   .  aP7 
+D:  .  aP6  .   .  aV7 
+E:  .   .   .  aV7 aA7 
+
+aA7 self-destructed
+
+Next player: Defender
+Turns played: 7
+
+    0   1   2   3   4  
+A: dA9 dT9 dF9  .   .  
+B: dT7 dP7  .   .   .  
+C:  .   .   .   .  aP7 
+D:  .  aP6  .   .  aV5 
+E:  .   .   .  aV5  .  
+
+Defender wins in 7
+
