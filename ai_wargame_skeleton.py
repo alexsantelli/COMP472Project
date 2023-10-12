@@ -531,11 +531,11 @@ class Game:
                 else:
                     print("The move is not valid! Try again. - (Source: human_turn def)")
 
-    def computer_turn(self) -> CoordPair | None:
+    def computer_turn(self, min_player: bool) -> CoordPair | None:
         """Computer plays a move."""
         print("[Enter computer_turn def]")
         print("[Processing...]")
-        mv = self.suggest_move()
+        mv = self.suggest_move(min_player)
         if mv is not None:
             (success,result) = self.perform_move(mv)
             if success:
@@ -589,7 +589,7 @@ class Game:
             return (0, move_candidates[0], 1)
         else:
             return (0, None, 0)
-    
+
 
     def units_amount(self, player: Player) -> Tuple[int, int, int, int, int]:
         VP = 0
@@ -616,9 +616,14 @@ class Game:
         VP2, TP2, FP2, PP2, AIP2 = self.units_amount(Player.Defender)
 
         e0 = (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1) - (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2)
+        # Incorporate the AI protection heuristic into the evaluation
+        #game_instance = Game()  # Create an instance of the Game class
+        #ai_protection_score = game_instance.e1_heuristic_protect_ai()
+        #e0 += ai_protection_score
         return e0
 
-    def minimax(self, depth, min_player) -> Tuple(int, CoordPair):
+
+    def minimax(self, depth, min_player, is_initial_loop = True) -> Tuple(int, CoordPair):
         #depth = self.options.max_depth
         #base case for recursion
         #TODO: define depth and evaluate() function
@@ -629,15 +634,17 @@ class Game:
 
         if (depth == self.options.max_depth): # so this initialization only happens once
             #TODO refine it as I think it's not going into this IF statment intially.
-            best_score = 0
-            best_move = None
+            print("Current intial check. Depth = ", depth, ". selfOption = ", self.options.max_depth)
+            #best_score = None
+            #best_move = None
 
         #min player plays first
         if min_player:
             #best_score = float('inf') #to ensure first evaluated move is always considered an improvement
-            best_move = None
+            #best_move = None
             #best_score = MIN_HEURISTIC_SCORE
-            best_score = 0
+            #best_score = 0
+             
             score = self.e0_heuristic_eval()
 
             for move in list(self.move_candidates()):
@@ -650,7 +657,12 @@ class Game:
                     #print("Min Score: ", score)
                     #print("Move: ", move)
 
-                    if score < best_score:
+                    if is_initial_loop:
+                        best_score = score
+                        best_move = move
+                        is_initial_loop = False
+
+                    elif score < best_score:
                         best_score = score
                         best_move = move
                         #print("Best Move: ", best_move)
@@ -658,27 +670,45 @@ class Game:
             return best_score, best_move
     
         else:
-            #best_score =  MAX_HEURISTIC_SCORE
-            best_move = None
+            #best_score =  0
+            #best_move = None
+            
 
             for move in list(self.move_candidates()):
                 simulation_board = self.clone() #creating separate board for simulation
-                simulation_board.perform_move(move)
-                score, _ = simulation_board.minimax(depth - 1, False)
+                valid_move, _ = simulation_board.is_valid_move(move)
+                
+                if valid_move:
+                    simulation_board.perform_move(move)
+                    score, _ = simulation_board.minimax(depth - 1, False)
+                    #print("Min Score: ", score)
+                    #print("Move : ", move)
 
-                if score > best_score:
-                    best_score = score
-                    best_move = move
+                    if is_initial_loop:
+                        best_score = score
+                        best_move = move
+                        is_initial_loop = False
+                    elif score > best_score:
+                        best_score = score
+                        best_move = move
             return best_score, best_move
     
 
-    def suggest_move(self) -> CoordPair | None:
+    def suggest_move(self, min_player: bool) -> CoordPair | None:
         """Suggest the next move using minimax alpha beta. TODO: REPLACE RANDOM_MOVE WITH PROPER GAME LOGIC!!!"""
         start_time = datetime.now()
         depth = self.options.max_depth
         avg_depth = 1
         #(score, move, avg_depth) = self.random_move() //Old skeleton logic
-        (score, move) = self.minimax(depth,True)
+        #coordinate_Source = self.get(coords.src)
+        #Current_Player_Type = coordinate_Source.player.name  
+        if min_player:
+            (score, move) = self.minimax(depth,True)
+        else:
+              (score, move) = self.minimax(depth,False)
+        
+        print("Best Score: ", score, ". Best Move: ", move)
+
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
@@ -857,6 +887,9 @@ def main():
 
         winner = game.has_winner()
         end_turns = game.turns_played
+        player = game.next_player
+        min_player = (game.next_player == Player.Defender)
+        #print("Player mini test: ", min_player)
         if winner is not None:
             print(f"{winner.name} wins!")
             with open(FILENAME, 'a') as f:
@@ -869,8 +902,9 @@ def main():
         elif game.options.game_type == GameType.CompVsDefender and game.next_player == Player.Defender:
             game.human_turn()
         else:
-            player = game.next_player
-            move = game.computer_turn()
+            #print("Player test: ", player)
+            move = game.computer_turn(min_player)
+
             if move is not None:
                 game.post_move_to_broker(move)
             else:
