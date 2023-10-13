@@ -656,13 +656,6 @@ class Game:
         Evaluate the protection level of all AI units.
         This also takes into account the health of the other units that protecting the AI units.
         """
-        total_protection = 0  # Initialize the total protection score
-        protection_score = 0
-        OPP_total_protection = 0  
-        OPP_protection_score = 0
-        # Determine the current player
-        current_player = self.next_player
-
         VP1, VP2 = 0, 0
         TP1, TP2 = 0, 0
         FP1, FP2 = 0, 0
@@ -784,10 +777,7 @@ class Game:
                                 elif unit_at_coord.type == UnitType.Program:
                                     PP2 -= (30*unit_at_coord.get_health())
 
-        OPP_total_protection = OPP_protection_score
-        difference_protection = total_protection - OPP_total_protection
-        #print("Total Protection score: ", total_protection, ". Total OPP Protection Score: ", OPP_total_protection)
-        print("Total Difference: ", difference_protection)
+        
         if self.next_player == Player.Attacker:
             e1 = (VP1 + TP1 + FP1 + PP1 + AIP1) - (VP2 + TP2 + FP2 + PP2 + AIP2)
         else:
