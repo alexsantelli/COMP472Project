@@ -228,6 +228,7 @@ class Options:
     max_time : float | None = 5.0
     game_type : GameType = GameType.AttackerVsDefender
     alpha_beta : bool = True
+    heuristic_Option : int | None = 3
     max_turns : int | None = 100
     randomize_moves : bool = True
     broker : str | None = None
@@ -650,12 +651,158 @@ class Game:
             e2 = (20*VP2_health + 10*TP2_health + 1*FP2_health + 1*PP2_health + 999*AIP2_health) - (20*VP1_health + 10*TP1_health + 1*FP1_health + 1*PP1_health + 999*AIP1_health)
         return e2
 
+    def e1_heuristic_protectAI(self) -> int:
+        """
+        Evaluate the protection level of all AI units.
+        This also takes into account the health of the other units that protecting the AI units.
+        """
+        total_protection = 0  # Initialize the total protection score
+        protection_score = 0
+        OPP_total_protection = 0  
+        OPP_protection_score = 0
+        # Determine the current player
+        current_player = self.next_player
 
+        VP1, VP2 = 0, 0
+        TP1, TP2 = 0, 0
+        FP1, FP2 = 0, 0
+        PP1, PP2 = 0, 0
+        AIP1, AIP2 = 0, 0
+
+        
+        for (_,unit) in self.player_units(Player.Attacker):
+            if unit.type == UnitType.Virus:
+                VP1 += 1
+            elif unit.type == UnitType.Tech:
+                TP1 += 1
+            elif unit.type == UnitType.Firewall:
+                FP1 += 1
+            elif unit.type == UnitType.Program:
+                PP1 += 1
+            elif unit.type == UnitType.AI:
+                AIP1 += 1
+
+        for (_,unit) in self.player_units(Player.Defender):
+            if unit.type == UnitType.Virus:
+                VP2 += 1
+            elif unit.type == UnitType.Tech:
+                TP2 += 1
+            elif unit.type == UnitType.Firewall:
+                FP2 += 1
+            elif unit.type == UnitType.Program:
+                PP2 += 1
+            elif unit.type == UnitType.AI:
+                AIP2 += 1
+
+        # Iterate through the game board to find AI units
+        for row in range(self.options.dim):
+            for col in range(self.options.dim):
+                unit = self.board[row][col]
+                if unit is not None and unit.type == UnitType.AI and unit.player == Player.Attacker:
+                    # Calculate protection score for the AI unit at (row, col)
+                    AIP1 = (999*unit.get_health())
+                    #print("AI of [", current_player, "] player health is [",protection_score,"]")
+
+                    # Define the coordinates for adjacent cells
+                    adjacent_cells = [
+                        (row - 1, col),  # Cell above
+                        (row + 1, col),  # Cell below
+                        (row, col - 1),  # Cell to the left
+                        (row, col + 1),  # Cell to the right
+                    ]
+
+                    for row, column in adjacent_cells:
+                        # Check if the unit at coordinates is within the game board
+                        if 0 <= row < self.options.dim and 0 <= column < self.options.dim:
+                            unit_at_coord = self.board[row][column]
+                            #print("unit at cord: ", unit_at_coord)
+                            # If the unit is not None and belongs to the same player
+                            if unit_at_coord and unit_at_coord.player == Player.Attacker:
+                                # Add the protection score based on the health of the unit
+                                if unit_at_coord.type == UnitType.Virus:
+                                    VP1 += (50*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Tech:
+                                    TP1 += (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Firewall:
+                                    FP1 += (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Program:
+                                    PP1 += (30*unit_at_coord.get_health())
+                            # If the unit is not None and belongs to the opponent player
+                            if unit_at_coord and unit_at_coord.player == Player.Defender:
+                                # Subtract the protection score based on the health of the unit
+                                if unit_at_coord.type == UnitType.Virus:
+                                    VP1 -= (50*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Tech:
+                                    TP1 -= (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Firewall:
+                                    FP1 -= (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Program:
+                                    PP1 -= (30*unit_at_coord.get_health())
+        
+        # Iterate through the game board to find the Opponents AI units
+        for row in range(self.options.dim):
+            for col in range(self.options.dim):
+                unit = self.board[row][col]
+                if unit is not None and unit.type == UnitType.AI and unit.player == Player.Defender:
+                    # Calculate protection score for the AI unit at (row, col)
+                    AIP2 = (999*unit.get_health())
+                    #print("AI of [", current_player, "] player health is [",protection_score,"]")
+
+                    # Define the coordinates for adjacent cells
+                    adjacent_cells = [
+                        (row - 1, col),  # Cell above
+                        (row + 1, col),  # Cell below
+                        (row, col - 1),  # Cell to the left
+                        (row, col + 1),  # Cell to the right
+                    ]
+
+                    for row, column in adjacent_cells:
+                        # Check if the unit at coordinates is within the game board
+                        if 0 <= row < self.options.dim and 0 <= column < self.options.dim:
+                            unit_at_coord = self.board[row][column]
+                            #print("unit at cord: ", unit_at_coord)
+                            # If the unit is not None and belongs to the same player
+                            if unit_at_coord and unit_at_coord.player == Player.Defender:
+                                # Add the protection score based on the health of the unit
+                                if unit_at_coord.type == UnitType.Virus:
+                                    VP2 += (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Tech:
+                                    TP2 += (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Firewall:
+                                    FP2 += (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Program:
+                                    PP2 += (30*unit_at_coord.get_health())
+                            # If the unit is not None and belongs to the opponent player
+                            if unit_at_coord and unit_at_coord.player == Player.Attacker:
+                                # Subtract the protection score based on the health of the unit
+                                if unit_at_coord.type == UnitType.Virus:
+                                    VP2 -= (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Tech:
+                                    TP2 -= (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Firewall:
+                                    FP2 -= (30*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Program:
+                                    PP2 -= (30*unit_at_coord.get_health())
+
+        OPP_total_protection = OPP_protection_score
+        difference_protection = total_protection - OPP_total_protection
+        #print("Total Protection score: ", total_protection, ". Total OPP Protection Score: ", OPP_total_protection)
+        print("Total Difference: ", difference_protection)
+        if self.next_player == Player.Attacker:
+            e1 = (VP1 + TP1 + FP1 + PP1 + AIP1) - (VP2 + TP2 + FP2 + PP2 + AIP2)
+        else:
+            e1 = (VP2 + TP2 + FP2 + PP2 + AIP2) - (VP1 + TP1 + FP1 + PP1 + AIP1) - (VP2 + TP2 + FP2 + PP2 + AIP2)
+        print("E1: ", e1)
+        return e1
     
     def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
         if depth == 0:
-            return self.e2_heuristic_eval(), None
-        
+            if Options.heuristic_Option == 2:
+                return self.e2_heuristic_eval(), None
+            elif Options.heuristic_Option == 1:
+                return self.e1_heuristic_protectAI(), None
+            else:
+                return self.e0_heuristic_eval(), None
         
         best_move = None
         if maximizing_player:
@@ -670,7 +817,8 @@ class Game:
                 if eval > max_eval:
                     max_eval = eval
                     best_move = move
-
+                    
+            #print("max eval: ", max_eval, ". Best move: ", best_move)
             return max_eval, best_move
         else:
             min_eval = MAX_HEURISTIC_SCORE
@@ -682,13 +830,17 @@ class Game:
                 if eval < min_eval:
                     min_eval = eval
                     best_move = move
-
+            #print("min eval: ", min_eval, ". Best move: ", best_move)
             return min_eval, best_move
     
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
         if depth == 0:
-            return self.e2_heuristic_eval(), None
-        
+            if Options.heuristic_Option == 2:
+                return self.e2_heuristic_eval(), None
+            elif Options.heuristic_Option == 1:
+                return self.e1_heuristic_protectAI(), None
+            else:
+                return self.e0_heuristic_eval(), None
         
         best_move = None
         if maximizing_player:
@@ -707,6 +859,7 @@ class Game:
                 
                 if beta <= alpha:
                     break  # Prune the branch
+            print("max_eval: ", max_eval,". BestMove: ", best_move)
             return max_eval, best_move
         else:
             min_eval = MAX_HEURISTIC_SCORE
@@ -722,6 +875,7 @@ class Game:
                 
                 if beta <= alpha:
                     break  # Prune the branch
+            print("mini_eval: ", min_eval,". BestMove: ", best_move)
             return min_eval, best_move
 
     def move_candidates(self) -> Iterable[CoordPair]:
@@ -741,10 +895,12 @@ class Game:
         #Suggest the next move using minimax alpha beta.
         start_time = datetime.now()
         #TODO: return avg depth in minimax & alpha-beta
+        #print("Alpha or Mini: ", Options.alpha_beta)
         if Options.alpha_beta:
             (score, move) = self.alphabeta(self.options.max_depth, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE, True )
         else:
             (score, move) = self.minimax(self.options.max_depth, True)
+        print("Best move: ", move)    
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
@@ -867,18 +1023,30 @@ def main():
             else:
                 print("Error: Must be greater than 5\n")
         while(1):
-            user_input = input("Please enter 1 for Alpha Beta or 2 for Minimax: ")
+            user_input = input("Please enter 1 for Alpha Beta or 2 for Minimax:")
             user_choice = string_to_int(user_input)
             if user_choice == 1:
-                options.alpha_beta = True
+                Options.alpha_beta = True
                 break
             elif user_choice == 2:
-                options.alpha_beta = False
+                Options.alpha_beta = False
                 break
             else:
-                print("Error: Please select 1 or 2\n")        
-
-
+                print("Error: Please select 1 or 2\n")          
+        while(1):
+            user_input = input("Please enter digit from the following options:\n- (0) e0 heuristic (default)\n- (1) e1 Protected AI heuristic\n- (2) e2 Health board heuristic\n")
+            user_choice = string_to_int(user_input)
+            if user_choice == 0:
+                Options.heuristic_Option = 0
+                break
+            elif user_choice == 1:
+                Options.heuristic_Option = 1
+                break
+            elif user_choice == 2:
+                Options.heuristic_Option = 2
+                break
+            else:
+                print("Error: Please select options 0 or 1 or 2\n")
 
     # override class defaults via command line options
     if args.max_depth is not None:
@@ -908,19 +1076,15 @@ def main():
             f.write(f"Maximum number of turns: {options.max_turns}\n")
             f.write(f"Alpha-Beta: {options.alpha_beta}\n")
 
-    
-
     # the main game loop
     while True:
         print()
         print(game)
-
         
         # writing to output file (using append)
         with open(FILENAME, 'a') as f:
             f.write(str(game) + "\n")
         
-
         winner = game.has_winner()
         end_turns = game.turns_played
         if winner is not None:
