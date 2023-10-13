@@ -654,7 +654,7 @@ class Game:
     def e1_heuristic_protectAI(self) -> int:
         """
         Evaluate the protection level of all AI units.
-        This also takes into account the health of the other units that protecting the AI units.
+        This also takes into account the health of the other units that are protecting the AI units.
         """
         VP1, VP2 = 0, 0
         TP1, TP2 = 0, 0
@@ -673,7 +673,7 @@ class Game:
             elif unit.type == UnitType.Program:
                 PP1 += 1
             elif unit.type == UnitType.AI:
-                AIP1 += 1
+                AIP1 += 999*unit.get_health()
 
         for (_,unit) in self.player_units(Player.Defender):
             if unit.type == UnitType.Virus:
@@ -685,7 +685,7 @@ class Game:
             elif unit.type == UnitType.Program:
                 PP2 += 1
             elif unit.type == UnitType.AI:
-                AIP2 += 1
+                AIP2 += 999*unit.get_health()
 
         # Iterate through the game board to find AI units
         for row in range(self.options.dim):
@@ -693,8 +693,8 @@ class Game:
                 unit = self.board[row][col]
                 if unit is not None and unit.type == UnitType.AI and unit.player == Player.Attacker:
                     # Calculate protection score for the AI unit at (row, col)
-                    AIP1 = (999*unit.get_health())
-                    #print("AI of [", current_player, "] player health is [",protection_score,"]")
+                    #AIP1 = (999*unit.get_health())
+                    #print("AI of [", unit.player, "] player health is [",unit.get_health(),"]")
 
                     # Define the coordinates for adjacent cells
                     adjacent_cells = [
@@ -713,24 +713,30 @@ class Game:
                             if unit_at_coord and unit_at_coord.player == Player.Attacker:
                                 # Add the protection score based on the health of the unit
                                 if unit_at_coord.type == UnitType.Virus:
-                                    VP1 += (50*unit_at_coord.get_health())
+                                    VP1 += (100*unit_at_coord.get_health())
+                                    AIP1 += (100*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Tech:
-                                    TP1 += (30*unit_at_coord.get_health())
+                                    TP1 += (100*unit_at_coord.get_health())
+                                    AIP1 += (100*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Firewall:
-                                    FP1 += (30*unit_at_coord.get_health())
+                                    FP1 += (50*unit_at_coord.get_health())
+                                    AIP1 += (50*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Program:
-                                    PP1 += (30*unit_at_coord.get_health())
+                                    PP1 += (50*unit_at_coord.get_health())
+                                    AIP1 += (50*unit_at_coord.get_health())
                             # If the unit is not None and belongs to the opponent player
                             if unit_at_coord and unit_at_coord.player == Player.Defender:
                                 # Subtract the protection score based on the health of the unit
                                 if unit_at_coord.type == UnitType.Virus:
                                     VP1 -= (50*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Tech:
-                                    TP1 -= (30*unit_at_coord.get_health())
+                                    TP1 -= (50*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Firewall:
-                                    FP1 -= (30*unit_at_coord.get_health())
+                                    FP1 -= (25*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Program:
-                                    PP1 -= (30*unit_at_coord.get_health())
+                                    PP1 -= (25*unit_at_coord.get_health())
+                            if unit_at_coord is None:
+                                AIP1 -= (100*unit.get_health())
         
         # Iterate through the game board to find the Opponents AI units
         for row in range(self.options.dim):
@@ -738,8 +744,8 @@ class Game:
                 unit = self.board[row][col]
                 if unit is not None and unit.type == UnitType.AI and unit.player == Player.Defender:
                     # Calculate protection score for the AI unit at (row, col)
-                    AIP2 = (999*unit.get_health())
-                    #print("AI of [", current_player, "] player health is [",protection_score,"]")
+                    #AIP2 = (999*unit.get_health())
+                    #print("AI of [", unit.type, "] player health is [",unit.get_health(),"]")
 
                     # Define the coordinates for adjacent cells
                     adjacent_cells = [
@@ -758,31 +764,37 @@ class Game:
                             if unit_at_coord and unit_at_coord.player == Player.Defender:
                                 # Add the protection score based on the health of the unit
                                 if unit_at_coord.type == UnitType.Virus:
-                                    VP2 += (30*unit_at_coord.get_health())
+                                    VP2 += (100*unit_at_coord.get_health())
+                                    AIP2 += (100*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Tech:
-                                    TP2 += (30*unit_at_coord.get_health())
+                                    TP2 += (100*unit_at_coord.get_health())
+                                    AIP2 += (100*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Firewall:
-                                    FP2 += (30*unit_at_coord.get_health())
+                                    FP2 += (50*unit_at_coord.get_health())
+                                    AIP2 += (50*unit_at_coord.get_health())
                                 elif unit_at_coord.type == UnitType.Program:
-                                    PP2 += (30*unit_at_coord.get_health())
+                                    PP2 += (50*unit_at_coord.get_health())
+                                    AIP2 += (50*unit_at_coord.get_health())
                             # If the unit is not None and belongs to the opponent player
                             if unit_at_coord and unit_at_coord.player == Player.Attacker:
                                 # Subtract the protection score based on the health of the unit
                                 if unit_at_coord.type == UnitType.Virus:
-                                    VP2 -= (30*unit_at_coord.get_health())
-                                elif unit_at_coord.type == UnitType.Tech:
-                                    TP2 -= (30*unit_at_coord.get_health())
-                                elif unit_at_coord.type == UnitType.Firewall:
-                                    FP2 -= (30*unit_at_coord.get_health())
-                                elif unit_at_coord.type == UnitType.Program:
-                                    PP2 -= (30*unit_at_coord.get_health())
-
-        
+                                    VP2 -= (50*unit_at_coord.get_health())
+                                if unit_at_coord.type == UnitType.Tech:
+                                    TP2 -= (50*unit_at_coord.get_health())
+                                if unit_at_coord.type == UnitType.Firewall:
+                                    FP2 -= (25*unit_at_coord.get_health())
+                                if unit_at_coord.type == UnitType.Program:
+                                    PP2 -= (25*unit_at_coord.get_health())
+                            if unit_at_coord is None:
+                                AIP2 -= (100*unit.get_health())
+                                #print("empty cell, penalty: ", AIP2)
+        #print("current AIP1: ", AIP1, ". current AIP2: ", AIP2)        
         if self.next_player == Player.Attacker:
             e1 = (VP1 + TP1 + FP1 + PP1 + AIP1) - (VP2 + TP2 + FP2 + PP2 + AIP2)
         else:
-            e1 = (VP2 + TP2 + FP2 + PP2 + AIP2) - (VP1 + TP1 + FP1 + PP1 + AIP1) - (VP2 + TP2 + FP2 + PP2 + AIP2)
-        print("E1: ", e1)
+            e1 = (VP2 + TP2 + FP2 + PP2 + AIP2) - (VP1 + TP1 + FP1 + PP1 + AIP1) 
+        #print("E1: ", e1)
         return e1
     
     def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
@@ -849,7 +861,7 @@ class Game:
                 
                 if beta <= alpha:
                     break  # Prune the branch
-            print("max_eval: ", max_eval,". BestMove: ", best_move)
+            #print("max_eval: ", max_eval,". BestMove: ", best_move)
             return max_eval, best_move
         else:
             min_eval = MAX_HEURISTIC_SCORE
@@ -865,7 +877,7 @@ class Game:
                 
                 if beta <= alpha:
                     break  # Prune the branch
-            print("mini_eval: ", min_eval,". BestMove: ", best_move)
+            #print("mini_eval: ", min_eval,". BestMove: ", best_move)
             return min_eval, best_move
 
     def move_candidates(self) -> Iterable[CoordPair]:
