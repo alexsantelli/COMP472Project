@@ -8,12 +8,15 @@ from dataclasses import dataclass, field
 from time import sleep
 from typing import Tuple, TypeVar, Type, Iterable, ClassVar
 import random
+import threading
+import time
 import requests
 
 # maximum and minimum values for our heuristic scores (usually represents an end of game condition)
 MAX_HEURISTIC_SCORE = 2000000000
 MIN_HEURISTIC_SCORE = -2000000000
 MAX_TURNS = 10
+keepLooping = True
 class UnitType(Enum):
     """Every unit type."""
     AI = 0
@@ -39,6 +42,11 @@ class GameType(Enum):
     AttackerVsComp = 1
     CompVsDefender = 2
     CompVsComp = 3
+
+def timeout():
+    global keepLooping
+    print("Times up!")
+    keepLooping = False
 
 ##############################################################################################################
 
@@ -253,7 +261,7 @@ class Game:
     _attacker_has_ai : bool = True
     _defender_has_ai : bool = True
     simulation: bool = False
-    
+ 
 
     def __post_init__(self):
         """Automatically called after class init to set up the default board state."""
@@ -429,7 +437,6 @@ class Game:
         return (False, "")
             
     def perform_move(self, coords : CoordPair) -> Tuple[bool,str]:
-        #test
         """Validate and perform a move expressed as a CoordPair."""
 
         current_Player = self.get(coords.src)
@@ -548,12 +555,14 @@ class Game:
         self.simulation = False
         if mv is not None:
             (success,result) = self.perform_move(mv)
+            '{:,}'.format(eval_states)
+            print("Cumulative evals: " + str(f'{eval_states:,}') + "\n")
+            with open(FILENAME, 'a') as f:
+                f.write("Cumulative evals: " + str(f'{eval_states:,}') + "\n\n")
             if success:
                 print(f"Computer {self.next_player.name}: ",end='')
                 print(result)
                 self.next_turn()
-        else:
-            print("In [Enter computer_turn def], mv = ", mv)
         return mv
 
     def player_units(self, player: Player) -> Iterable[Tuple[Coord,Unit]]:
@@ -617,6 +626,7 @@ class Game:
             e0 = (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2) - (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1)
         return e0
     
+    
     def e2_heuristic_eval(self) -> int:
         VP1_health, VP2_health, TP1_health, TP2_health, FP1_health, FP2_health, PP1_health, PP2_health, AIP1_health, AIP2_health = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
@@ -651,78 +661,88 @@ class Game:
         return e2
 
 
-    
     def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
+        global eval_states
+        global evals_per_depth0
+        global evals_per_depth1
+        
         if depth == 0:
-            return self.e2_heuristic_eval(), None
+            return self.e0_heuristic_eval(), None
         
-        
-        best_move = None
-        if maximizing_player:
+        if keepLooping:
+            best_move = None
+            if maximizing_player:
 
-            max_eval = MIN_HEURISTIC_SCORE
-            for move in self.move_candidates():
-                simulation_board = self.clone()
-                simulation_board.simulation = True
-                simulation_board.perform_move(move)
-                eval, _ = simulation_board.minimax(depth - 1, False)
-                
-                if eval > max_eval:
-                    max_eval = eval
-                    best_move = move
+                max_eval = MIN_HEURISTIC_SCORE
+                for move in self.move_candidates():
+                    simulation_board = self.clone()
+                    simulation_board.simulation = True
+                    simulation_board.perform_move(move)
+                    eval_states += 1
+                    eval, _ = simulation_board.minimax(depth - 1, False)
+                    
+                    if eval > max_eval:
+                        max_eval = eval
+                        best_move = move
 
-            return max_eval, best_move
+                return max_eval, best_move
+            else:
+                min_eval = MAX_HEURISTIC_SCORE
+                for move in self.move_candidates():
+                    simulation_board = self.clone()
+                    simulation_board.simulation = True
+                    simulation_board.perform_move(move)
+                    eval_states += 1
+                    eval, _ = simulation_board.minimax(depth - 1, True)
+                    if eval < min_eval:
+                        min_eval = eval
+                        best_move = move
+
+                return min_eval, best_move
         else:
-            min_eval = MAX_HEURISTIC_SCORE
-            for move in self.move_candidates():
-                simulation_board = self.clone()
-                simulation_board.simulation = True
-                simulation_board.perform_move(move)
-                eval, _ = simulation_board.minimax(depth - 1, True)
-                if eval < min_eval:
-                    min_eval = eval
-                    best_move = move
-
-            return min_eval, best_move
+            return 0, None
     
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
         if depth == 0:
             return self.e2_heuristic_eval(), None
         
         
-        best_move = None
-        if maximizing_player:
+        if keepLooping:
+            best_move = None
+            if maximizing_player:
 
-            max_eval = MIN_HEURISTIC_SCORE
-            for move in self.move_candidates():
-                simulation_board = self.clone()
-                simulation_board.simulation = True
-                simulation_board.perform_move(move)
-                eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
-                
-                if eval > max_eval:
-                    max_eval = eval
-                    best_move = move
-                alpha = max(alpha, eval)
-                
-                if beta <= alpha:
-                    break  # Prune the branch
-            return max_eval, best_move
+                max_eval = MIN_HEURISTIC_SCORE
+                for move in self.move_candidates():
+                    simulation_board = self.clone()
+                    simulation_board.simulation = True
+                    simulation_board.perform_move(move)
+                    eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
+                    
+                    if eval > max_eval:
+                        max_eval = eval
+                        best_move = move
+                    alpha = max(alpha, eval)
+                    
+                    if beta <= alpha:
+                        break  # Prune the branch
+                return max_eval, best_move
+            else:
+                min_eval = MAX_HEURISTIC_SCORE
+                for move in self.move_candidates():
+                    simulation_board = self.clone()
+                    simulation_board.simulation = True
+                    simulation_board.perform_move(move)
+                    eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
+                    if eval < min_eval:
+                        min_eval = eval
+                        best_move = move
+                    beta = min(beta, eval)
+                    
+                    if beta <= alpha:
+                        break  # Prune the branch
+                return min_eval, best_move
         else:
-            min_eval = MAX_HEURISTIC_SCORE
-            for move in self.move_candidates():
-                simulation_board = self.clone()
-                simulation_board.simulation = True
-                simulation_board.perform_move(move)
-                eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
-                if eval < min_eval:
-                    min_eval = eval
-                    best_move = move
-                beta = min(beta, eval)
-                
-                if beta <= alpha:
-                    break  # Prune the branch
-            return min_eval, best_move
+            return 0, None
 
     def move_candidates(self) -> Iterable[CoordPair]:
         """Generate valid move candidates for the next player."""
@@ -741,10 +761,17 @@ class Game:
         #Suggest the next move using minimax alpha beta.
         start_time = datetime.now()
         #TODO: return avg depth in minimax & alpha-beta
-        if Options.alpha_beta:
-            (score, move) = self.alphabeta(self.options.max_depth, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE, True )
+        #subtract 0.1 to negate any misprecision in timer
+        timer = threading.Timer(self.options.max_time, timeout)
+        timer.start()
+        tic = time.perf_counter()
+        if self.options.alpha_beta:
+            (score, move) = self.alphabeta(self.options.max_depth, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE, True)
         else:
             (score, move) = self.minimax(self.options.max_depth, True)
+        toc = time.perf_counter()
+        print(f"Search ran for {toc - tic:0.4f} seconds")
+        timer.cancel()
         elapsed_seconds = (datetime.now() - start_time).total_seconds()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
@@ -809,15 +836,27 @@ class Game:
         return None
 
 ##############################################################################################################
-def string_to_int(str) -> int:
+def string_to_int(str) -> int | None:
     try:
         output = int(str)
     except ValueError:
         print("invalid Input. Enter Integer value\n")
-        return 5
+        return None
+    return output
+
+def string_to_float(str) -> float | None:
+    try:
+        output = float(str)
+    except ValueError:
+        print("invalid Input. Enter a number value\n")
+        return None
     return output
 
 def main():
+
+    global eval_states
+    eval_states = 0
+
     # parse command line arguments
     parser = argparse.ArgumentParser(
         prog='ai_wargame',
@@ -853,23 +892,29 @@ def main():
         while(1):
             user_input = input("Please enter Maximum Turns (Minumum 10): ")
             user_choice = string_to_int(user_input)
-            if user_choice >= MAX_TURNS:
+            if user_choice == None:
+                continue
+            elif user_choice >= MAX_TURNS:
                 options.max_turns = user_choice
                 break
             else:
-                print("Error: Must be greater than 5\n")
+                print("Error: Must be greater than 10\n")
         while(1):
-            user_input = input("Please enter max Timeout for AI (Minumum 5): ")
-            user_choice = string_to_int(user_input)
-            if user_choice >=5:
+            user_input = input("Please enter max Timeout for AI: ")
+            user_choice = string_to_float(user_input)
+            if user_choice == None:
+                continue
+            elif user_choice > 0.1:
                 options.max_time = user_choice
                 break
             else:
-                print("Error: Must be greater than 5\n")
+                print("Error: Must be greater than 0.1\n")
         while(1):
             user_input = input("Please enter 1 for Alpha Beta or 2 for Minimax: ")
             user_choice = string_to_int(user_input)
-            if user_choice == 1:
+            if user_choice == None:
+                continue
+            elif user_choice == 1:
                 options.alpha_beta = True
                 break
             elif user_choice == 2:
@@ -893,7 +938,7 @@ def main():
 
     #Naming log File
     global FILENAME 
-    FILENAME = 'gameTrace-' + str(options.alpha_beta) + '-' + str(int(options.max_time)) + '-' + str(options.max_turns) + '.txt'
+    FILENAME = 'gameTrace-' + str(options.alpha_beta) + '-' + str(options.max_time) + '-' + str(options.max_turns) + '.txt'
     # Game specifications
     with open(FILENAME, 'w') as f:
             f.write("Timeout: " + str(options.max_time)+ " seconds\n")
@@ -925,8 +970,10 @@ def main():
         end_turns = game.turns_played
         if winner is not None:
             print(f"{winner.name} wins!")
+            print("Cumulative evals: " + str(f'{eval_states:,}') + "\n")
             with open(FILENAME, 'a') as f:
                 f.write(winner.name+" wins in "+ str(end_turns) + "\n\n")
+                f.write("Cumulative evals: " + str(f'{eval_states:,}') + "\n\n")
             break
         if game.options.game_type == GameType.AttackerVsDefender:
             game.human_turn()
@@ -941,6 +988,7 @@ def main():
                 game.post_move_to_broker(move)
             else:
                 print("Computer doesn't know what to do!!!")
+                print(f"{game.next_player.name} wins!")
                 exit(1)
 
 ##############################################################################################################
