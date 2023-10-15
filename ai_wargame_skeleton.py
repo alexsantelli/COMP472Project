@@ -664,6 +664,151 @@ class Game:
             e2 = (20*VP2_health + 10*TP2_health + 1*FP2_health + 1*PP2_health + 999*AIP2_health) - (20*VP1_health + 10*TP1_health + 1*FP1_health + 1*PP1_health + 999*AIP1_health)
         return e2
 
+    def e1_heuristic_protectAI(self) -> int:
+        """
+        Evaluate the protection level of all AI units.
+        This also takes into account the health of the other units that are protecting the AI units.
+        """
+        VP1, VP2 = 0, 0
+        TP1, TP2 = 0, 0
+        FP1, FP2 = 0, 0
+        PP1, PP2 = 0, 0
+        AIP1, AIP2 = 0, 0
+
+        
+        for (_,unit) in self.player_units(Player.Attacker):
+            if unit.type == UnitType.Virus:
+                VP1 += 1
+            elif unit.type == UnitType.Tech:
+                TP1 += 1
+            elif unit.type == UnitType.Firewall:
+                FP1 += 1
+            elif unit.type == UnitType.Program:
+                PP1 += 1
+            elif unit.type == UnitType.AI:
+                AIP1 += 999*unit.get_health()
+
+        for (_,unit) in self.player_units(Player.Defender):
+            if unit.type == UnitType.Virus:
+                VP2 += 1
+            elif unit.type == UnitType.Tech:
+                TP2 += 1
+            elif unit.type == UnitType.Firewall:
+                FP2 += 1
+            elif unit.type == UnitType.Program:
+                PP2 += 1
+            elif unit.type == UnitType.AI:
+                AIP2 += 999*unit.get_health()
+
+        # Iterate through the game board to find AI units
+        for row in range(self.options.dim):
+            for col in range(self.options.dim):
+                unit = self.board[row][col]
+                if unit is not None and unit.type == UnitType.AI and unit.player == Player.Attacker:
+                    # Calculate protection score for the AI unit at (row, col)
+                    #AIP1 = (999*unit.get_health())
+                    #print("AI of [", unit.player, "] player health is [",unit.get_health(),"]")
+
+                    # Define the coordinates for adjacent cells
+                    adjacent_cells = [
+                        (row - 1, col),  # Cell above
+                        (row + 1, col),  # Cell below
+                        (row, col - 1),  # Cell to the left
+                        (row, col + 1),  # Cell to the right
+                    ]
+
+                    for row, column in adjacent_cells:
+                        # Check if the unit at coordinates is within the game board
+                        if 0 <= row < self.options.dim and 0 <= column < self.options.dim:
+                            unit_at_coord = self.board[row][column]
+                            #print("unit at cord: ", unit_at_coord)
+                            # If the unit is not None and belongs to the same player
+                            if unit_at_coord and unit_at_coord.player == Player.Attacker:
+                                # Add the protection score based on the health of the unit
+                                if unit_at_coord.type == UnitType.Virus:
+                                    VP1 += (100*unit_at_coord.get_health())
+                                    AIP1 += (100*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Tech:
+                                    TP1 += (100*unit_at_coord.get_health())
+                                    AIP1 += (100*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Firewall:
+                                    FP1 += (50*unit_at_coord.get_health())
+                                    AIP1 += (50*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Program:
+                                    PP1 += (50*unit_at_coord.get_health())
+                                    AIP1 += (50*unit_at_coord.get_health())
+                            # If the unit is not None and belongs to the opponent player
+                            if unit_at_coord and unit_at_coord.player == Player.Defender:
+                                # Subtract the protection score based on the health of the unit
+                                if unit_at_coord.type == UnitType.Virus:
+                                    VP1 -= (50*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Tech:
+                                    TP1 -= (50*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Firewall:
+                                    FP1 -= (25*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Program:
+                                    PP1 -= (25*unit_at_coord.get_health())
+                            if unit_at_coord is None:
+                                AIP1 -= (100*unit.get_health())
+        
+        # Iterate through the game board to find the Opponents AI units
+        for row in range(self.options.dim):
+            for col in range(self.options.dim):
+                unit = self.board[row][col]
+                if unit is not None and unit.type == UnitType.AI and unit.player == Player.Defender:
+                    # Calculate protection score for the AI unit at (row, col)
+                    #AIP2 = (999*unit.get_health())
+                    #print("AI of [", unit.type, "] player health is [",unit.get_health(),"]")
+
+                    # Define the coordinates for adjacent cells
+                    adjacent_cells = [
+                        (row - 1, col),  # Cell above
+                        (row + 1, col),  # Cell below
+                        (row, col - 1),  # Cell to the left
+                        (row, col + 1),  # Cell to the right
+                    ]
+
+                    for row, column in adjacent_cells:
+                        # Check if the unit at coordinates is within the game board
+                        if 0 <= row < self.options.dim and 0 <= column < self.options.dim:
+                            unit_at_coord = self.board[row][column]
+                            #print("unit at cord: ", unit_at_coord)
+                            # If the unit is not None and belongs to the same player
+                            if unit_at_coord and unit_at_coord.player == Player.Defender:
+                                # Add the protection score based on the health of the unit
+                                if unit_at_coord.type == UnitType.Virus:
+                                    VP2 += (100*unit_at_coord.get_health())
+                                    AIP2 += (100*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Tech:
+                                    TP2 += (100*unit_at_coord.get_health())
+                                    AIP2 += (100*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Firewall:
+                                    FP2 += (50*unit_at_coord.get_health())
+                                    AIP2 += (50*unit_at_coord.get_health())
+                                elif unit_at_coord.type == UnitType.Program:
+                                    PP2 += (50*unit_at_coord.get_health())
+                                    AIP2 += (50*unit_at_coord.get_health())
+                            # If the unit is not None and belongs to the opponent player
+                            if unit_at_coord and unit_at_coord.player == Player.Attacker:
+                                # Subtract the protection score based on the health of the unit
+                                if unit_at_coord.type == UnitType.Virus:
+                                    VP2 -= (50*unit_at_coord.get_health())
+                                if unit_at_coord.type == UnitType.Tech:
+                                    TP2 -= (50*unit_at_coord.get_health())
+                                if unit_at_coord.type == UnitType.Firewall:
+                                    FP2 -= (25*unit_at_coord.get_health())
+                                if unit_at_coord.type == UnitType.Program:
+                                    PP2 -= (25*unit_at_coord.get_health())
+                            if unit_at_coord is None:
+                                AIP2 -= (100*unit.get_health())
+                                #print("empty cell, penalty: ", AIP2)
+        #print("current AIP1: ", AIP1, ". current AIP2: ", AIP2)        
+        if self.next_player == Player.Attacker:
+            e1 = (VP1 + TP1 + FP1 + PP1 + AIP1) - (VP2 + TP2 + FP2 + PP2 + AIP2)
+        else:
+            e1 = (VP2 + TP2 + FP2 + PP2 + AIP2) - (VP1 + TP1 + FP1 + PP1 + AIP1) 
+        #print("E1: ", e1)
+        return e1
 
     def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
         global eval_states
