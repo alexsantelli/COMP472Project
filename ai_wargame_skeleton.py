@@ -261,6 +261,7 @@ class Game:
     _attacker_has_ai : bool = True
     _defender_has_ai : bool = True
     simulation: bool = False
+    
  
 
     def __post_init__(self):
@@ -663,9 +664,6 @@ class Game:
 
     def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
         global eval_states
-        global evals_per_depth0
-        global evals_per_depth1
-        
         if depth == 0:
             return self.e0_heuristic_eval(), None
         
@@ -679,6 +677,7 @@ class Game:
                     simulation_board.simulation = True
                     simulation_board.perform_move(move)
                     eval_states += 1
+                    evals_per_depth[self.options.max_depth - depth] += 1
                     eval, _ = simulation_board.minimax(depth - 1, False)
                     
                     if eval > max_eval:
@@ -693,6 +692,7 @@ class Game:
                     simulation_board.simulation = True
                     simulation_board.perform_move(move)
                     eval_states += 1
+                    evals_per_depth[self.options.max_depth - depth] += 1
                     eval, _ = simulation_board.minimax(depth - 1, True)
                     if eval < min_eval:
                         min_eval = eval
@@ -716,6 +716,7 @@ class Game:
                     simulation_board = self.clone()
                     simulation_board.simulation = True
                     simulation_board.perform_move(move)
+                    evals_per_depth[self.options.max_depth - depth] += 1
                     eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
                     
                     if eval > max_eval:
@@ -732,6 +733,7 @@ class Game:
                     simulation_board = self.clone()
                     simulation_board.simulation = True
                     simulation_board.perform_move(move)
+                    evals_per_depth[self.options.max_depth - depth] += 1
                     eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
                     if eval < min_eval:
                         min_eval = eval
@@ -765,21 +767,29 @@ class Game:
         timer = threading.Timer(self.options.max_time, timeout)
         timer.start()
         tic = time.perf_counter()
+        # t
+        
+        
         if self.options.alpha_beta:
             (score, move) = self.alphabeta(self.options.max_depth, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE, True)
         else:
             (score, move) = self.minimax(self.options.max_depth, True)
         toc = time.perf_counter()
+        elapsed_seconds = (datetime.now() - start_time).total_seconds()
         print(f"Search ran for {toc - tic:0.4f} seconds")
         timer.cancel()
-        elapsed_seconds = (datetime.now() - start_time).total_seconds()
+        print("Cumulative Evals by depth: ", end ='')
+        for i in range(self.options.max_depth):
+            print(str(i + 1) + "=" + str(evals_per_depth[i]), end = ' ')
+        print()
+        print("Cumulative% evals by", end = '')
+        for i in range(self.options.max_depth):
+            print(str(i + 1) + f"= {(evals_per_depth[i]/eval_states)*100:0.1f}%", end = ' ')
+        print()
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
-        #print(f"Average recursive depth: {avg_depth:0.1f}")
-        print(f"Evals per depth: ",end='')
         for k in sorted(self.stats.evaluations_per_depth.keys()):
             print(f"{k}:{self.stats.evaluations_per_depth[k]} ",end='')
-        print()
         total_evals = sum(self.stats.evaluations_per_depth.values())
         if self.stats.total_seconds > 0:
             print(f"Eval perf.: {total_evals/self.stats.total_seconds/1000:0.1f}k/s")
@@ -935,7 +945,10 @@ def main():
 
     # create a new game
     game = Game(options=options)
-
+    
+    # Creating a list for each depth in the search
+    global evals_per_depth
+    evals_per_depth = [0] * options.max_depth
     #Naming log File
     global FILENAME 
     FILENAME = 'gameTrace-' + str(options.alpha_beta) + '-' + str(options.max_time) + '-' + str(options.max_turns) + '.txt'
