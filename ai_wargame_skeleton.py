@@ -595,7 +595,7 @@ class Game:
         PP1, PP2 = 0, 0
         AIP1, AIP2 = 0, 0
 
-        
+        #retrieving attacker number of units
         for (_,unit) in self.player_units(Player.Attacker):
             if unit.type == UnitType.Virus:
                 VP1 += 1
@@ -607,7 +607,8 @@ class Game:
                 PP1 += 1
             elif unit.type == UnitType.AI:
                 AIP1 += 1
-
+        
+        #retrieving defender number of units
         for (_,unit) in self.player_units(Player.Defender):
             if unit.type == UnitType.Virus:
                 VP2 += 1
@@ -631,6 +632,7 @@ class Game:
     def e2_heuristic_eval(self) -> int:
         VP1_health, VP2_health, TP1_health, TP2_health, FP1_health, FP2_health, PP1_health, PP2_health, AIP1_health, AIP2_health = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
+        #retrieve current health of each unit for attacker
         for (_,unit) in self.player_units(Player.Attacker):
             if unit.type == UnitType.Virus:
                 VP1_health += unit.get_health()
@@ -642,7 +644,8 @@ class Game:
                 PP1_health += unit.get_health()
             elif unit.type == UnitType.AI:
                 AIP1_health += unit.get_health()
-            
+
+        #retrieve current health of each unit for defender 
         for (_,unit) in self.player_units(Player.Defender):
             if unit.type == UnitType.Virus:
                 VP2_health += unit.get_health()
@@ -667,33 +670,37 @@ class Game:
         if depth == 0:
             return self.e0_heuristic_eval(), None
         
+        #for timeout
         if keepLooping:
             best_move = None
             if maximizing_player:
 
-                max_eval = MIN_HEURISTIC_SCORE
+                max_eval = MIN_HEURISTIC_SCORE #setting minumum evaluation to minimum heuristic so next evalutation is best
+                #simulating moves to check which is best according to heuristic
                 for move in self.move_candidates():
                     simulation_board = self.clone()
                     simulation_board.simulation = True
                     simulation_board.perform_move(move)
-                    eval_states += 1
-                    evals_per_depth[self.options.max_depth - depth] += 1
+                    eval_states += 1 #cumulative number of evaluation states counter
+                    evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
                     eval, _ = simulation_board.minimax(depth - 1, False)
-                    
+                    #updating best update and best move
                     if eval > max_eval:
                         max_eval = eval
                         best_move = move
 
                 return max_eval, best_move
             else:
-                min_eval = MAX_HEURISTIC_SCORE
+                min_eval = MAX_HEURISTIC_SCORE  #setting maximum evaluation to minimum heuristic so next evalutation is best
+                #simulating moves to check which is best according to heuristic
                 for move in self.move_candidates():
                     simulation_board = self.clone()
                     simulation_board.simulation = True
                     simulation_board.perform_move(move)
-                    eval_states += 1
-                    evals_per_depth[self.options.max_depth - depth] += 1
+                    eval_states += 1 #cumulative number of evaluation states counter
+                    evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
                     eval, _ = simulation_board.minimax(depth - 1, True)
+                    #updating best update and best move
                     if eval < min_eval:
                         min_eval = eval
                         best_move = move
@@ -703,22 +710,25 @@ class Game:
             return 0, None
     
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
+        global eval_states
         if depth == 0:
             return self.e2_heuristic_eval(), None
         
-        
+        #for timeout
         if keepLooping:
             best_move = None
             if maximizing_player:
 
-                max_eval = MIN_HEURISTIC_SCORE
+                max_eval = MIN_HEURISTIC_SCORE #setting minumum evaluation to minimum heuristic so next evalutation is best
+                #simulating moves to check which is best according to heuristic
                 for move in self.move_candidates():
                     simulation_board = self.clone()
                     simulation_board.simulation = True
                     simulation_board.perform_move(move)
-                    evals_per_depth[self.options.max_depth - depth] += 1
+                    eval_states += 1 #cumulative number of evaluation states counter
+                    evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
                     eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
-                    
+                    #updating best update and best move
                     if eval > max_eval:
                         max_eval = eval
                         best_move = move
@@ -728,13 +738,16 @@ class Game:
                         break  # Prune the branch
                 return max_eval, best_move
             else:
-                min_eval = MAX_HEURISTIC_SCORE
+                min_eval = MAX_HEURISTIC_SCORE #setting maximum evaluation to minimum heuristic so next evalutation is best
+                #simulating moves to check which is best according to heuristic
                 for move in self.move_candidates():
                     simulation_board = self.clone()
                     simulation_board.simulation = True
                     simulation_board.perform_move(move)
-                    evals_per_depth[self.options.max_depth - depth] += 1
+                    eval_states += 1 #cumulative number of evaluation states counter
+                    evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
                     eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
+                    #updating best update and best move
                     if eval < min_eval:
                         min_eval = eval
                         best_move = move
@@ -767,9 +780,6 @@ class Game:
         timer = threading.Timer(self.options.max_time, timeout)
         timer.start()
         tic = time.perf_counter()
-        # t
-        
-        
         if self.options.alpha_beta:
             (score, move) = self.alphabeta(self.options.max_depth, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE, True)
         else:
