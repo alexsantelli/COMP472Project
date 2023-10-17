@@ -823,12 +823,14 @@ class Game:
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
         global eval_states
         if depth == 0:
+
             if self.options.heuristic_Option == 2:
                 return self.e2_heuristic_eval(), None
             elif self.options.heuristic_Option == 1:
                 return self.e1_heuristic_protectAI(), None
             else:
                 return self.e0_heuristic_eval(), None
+
         
         #for timeout
         if keepLooping:
@@ -896,7 +898,6 @@ class Game:
         timer = threading.Timer(self.options.max_time, timeout)
         timer.start()
         tic = time.perf_counter()
-
         if self.options.alpha_beta:
             (score, move) = self.alphabeta(self.options.max_depth, MIN_HEURISTIC_SCORE, MAX_HEURISTIC_SCORE, True)
         else:
