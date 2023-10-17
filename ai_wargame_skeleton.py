@@ -1064,13 +1064,13 @@ def main():
             user_input = input("Please enter digit from the following options:\n- (0) e0 heuristic (default)\n- (1) e1 Protected AI heuristic\n- (2) e2 Health board heuristic\n")
             user_choice = string_to_int(user_input)
             if user_choice == 0:
-                Options.heuristic_Option = 0
+                options.heuristic_Option = 0
                 break
             elif user_choice == 1:
-                Options.heuristic_Option = 1
+                options.heuristic_Option = 1
                 break
             elif user_choice == 2:
-                Options.heuristic_Option = 2
+                options.heuristic_Option = 2
                 break
             else:
                 print("Error: Please select options 0 or 1 or 2\n")     
