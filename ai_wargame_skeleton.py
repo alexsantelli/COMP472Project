@@ -45,7 +45,6 @@ class GameType(Enum):
 
 def timeout():
     global keepLooping
-    print("Times up!")
     keepLooping = False
 
 ##############################################################################################################
@@ -629,7 +628,6 @@ class Game:
             e0 = (3*VP2 + 3*TP2 + 3*FP2 + 3*PP2 + 9999*AIP2) - (3*VP1 + 3*TP1 + 3*FP1 + 3*PP1 + 9999*AIP1)
         return e0
     
-    
     def e2_heuristic_eval(self) -> int:
         VP1_health, VP2_health, TP1_health, TP2_health, FP1_health, FP2_health, PP1_health, PP2_health, AIP1_health, AIP2_health = 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 
@@ -771,7 +769,7 @@ class Game:
         #print("E1: ", e1)
         return e1
     
-    def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
+    def minimax(self, depth: int, maximizing_player: bool) -> Tuple(float, CoordPair):
         global eval_states
         if depth == 0:
             if self.options.heuristic_Option == 2:
@@ -781,44 +779,46 @@ class Game:
             else:
                 return self.e0_heuristic_eval(), None
         
-        #for timeout
-        if keepLooping:
-            best_move = None
-            if maximizing_player:
+        best_move = None
+        if maximizing_player:
 
-                max_eval = MIN_HEURISTIC_SCORE #setting minumum evaluation to minimum heuristic so next evalutation is best
-                #simulating moves to check which is best according to heuristic
-                for move in self.move_candidates():
-                    simulation_board = self.clone()
-                    simulation_board.simulation = True
-                    simulation_board.perform_move(move)
-                    eval_states += 1 #cumulative number of evaluation states counter
-                    evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
-                    eval, _ = simulation_board.minimax(depth - 1, False)
-                    #updating best update and best move
-                    if eval > max_eval:
-                        max_eval = eval
-                        best_move = move
+            max_eval = MIN_HEURISTIC_SCORE #setting minumum evaluation to minimum heuristic so next evalutation is best
+            #simulating moves to check which is best according to heuristic
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval_states += 1 #cumulative number of evaluation states counter
+                evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
+                #Checking if timer is close to finished and returning best current move
+                if keepLooping == False:
+                    break
+                eval, _ = simulation_board.minimax(depth - 1, False)
+                #updating best update and best move
+                if eval > max_eval:
+                    max_eval = eval
+                    best_move = move
 
-                return max_eval, best_move
-            else:
-                min_eval = MAX_HEURISTIC_SCORE  #setting maximum evaluation to minimum heuristic so next evalutation is best
-                #simulating moves to check which is best according to heuristic
-                for move in self.move_candidates():
-                    simulation_board = self.clone()
-                    simulation_board.simulation = True
-                    simulation_board.perform_move(move)
-                    eval_states += 1 #cumulative number of evaluation states counter
-                    evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
-                    eval, _ = simulation_board.minimax(depth - 1, True)
-                    #updating best update and best move
-                    if eval < min_eval:
-                        min_eval = eval
-                        best_move = move
-
-                return min_eval, best_move
+            return max_eval, best_move
         else:
-            return 0, None
+            min_eval = MAX_HEURISTIC_SCORE  #setting maximum evaluation to minimum heuristic so next evalutation is best
+            #simulating moves to check which is best according to heuristic
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval_states += 1 #cumulative number of evaluation states counter
+                evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
+                #Checking if timer is close to finished and returning best current move
+                if keepLooping == False:
+                    break
+                eval, _ = simulation_board.minimax(depth - 1, True)
+                #updating best update and best move
+                if eval < min_eval:
+                    min_eval = eval
+                    best_move = move
+
+            return min_eval, best_move
     
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
         global eval_states
@@ -831,51 +831,54 @@ class Game:
             else:
                 return self.e0_heuristic_eval(), None
 
-        
-        #for timeout
-        if keepLooping:
-            best_move = None
-            if maximizing_player:
+        best_move = None
+        if maximizing_player:
 
-                max_eval = MIN_HEURISTIC_SCORE #setting minumum evaluation to minimum heuristic so next evalutation is best
-                #simulating moves to check which is best according to heuristic
-                for move in self.move_candidates():
-                    simulation_board = self.clone()
-                    simulation_board.simulation = True
-                    simulation_board.perform_move(move)
-                    eval_states += 1 #cumulative number of evaluation states counter
-                    evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
-                    eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
-                    #updating best update and best move
-                    if eval > max_eval:
-                        max_eval = eval
-                        best_move = move
-                    alpha = max(alpha, eval)
-                    
-                    if beta <= alpha:
-                        break  # Prune the branch
-                return max_eval, best_move
-            else:
-                min_eval = MAX_HEURISTIC_SCORE #setting maximum evaluation to minimum heuristic so next evalutation is best
-                #simulating moves to check which is best according to heuristic
-                for move in self.move_candidates():
-                    simulation_board = self.clone()
-                    simulation_board.simulation = True
-                    simulation_board.perform_move(move)
-                    eval_states += 1 #cumulative number of evaluation states counter
-                    evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
-                    eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
-                    #updating best update and best move
-                    if eval < min_eval:
-                        min_eval = eval
-                        best_move = move
-                    beta = min(beta, eval)
-                    
-                    if beta <= alpha:
-                        break  # Prune the branch
-                return min_eval, best_move
+            max_eval = MIN_HEURISTIC_SCORE #setting minumum evaluation to minimum heuristic so next evalutation is best
+            #simulating moves to check which is best according to heuristic
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval_states += 1 #cumulative number of evaluation states counter
+                evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
+                #Checking if timer is close to finished and returning best current move
+                if keepLooping == False:
+                    print("Search ended early, returned best current move")
+                    break
+                eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
+                #updating best update and best move
+                if eval > max_eval:
+                    max_eval = eval
+                    best_move = move
+                alpha = max(alpha, eval)
+                
+                if beta <= alpha:
+                    break  # Prune the branch
+            return max_eval, best_move
         else:
-            return 0, None
+            min_eval = MAX_HEURISTIC_SCORE #setting maximum evaluation to minimum heuristic so next evalutation is best
+            #simulating moves to check which is best according to heuristic
+            for move in self.move_candidates():
+                simulation_board = self.clone()
+                simulation_board.simulation = True
+                simulation_board.perform_move(move)
+                eval_states += 1 #cumulative number of evaluation states counter
+                evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
+                #Checking if timer is close to finished and returning best current move
+                if keepLooping == False:
+                    print("Search ended early, returned best current move")
+                    break
+                eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
+                #updating best update and best move
+                if eval < min_eval:
+                    min_eval = eval
+                    best_move = move
+                beta = min(beta, eval)
+                
+                if beta <= alpha:
+                    break  # Prune the branch
+            return min_eval, best_move
 
     def move_candidates(self) -> Iterable[CoordPair]:
         """Generate valid move candidates for the next player."""
@@ -892,10 +895,11 @@ class Game:
 
     def suggest_move(self) -> CoordPair | None:
         #Suggest the next move using minimax alpha beta.
-        start_time = datetime.now()
         #TODO: return avg depth in minimax & alpha-beta
         #subtract 0.1 to negate any misprecision in timer
-        timer = threading.Timer(self.options.max_time, timeout)
+        timer = threading.Timer(self.options.max_time - 0.01, timeout)
+        global keepLooping
+        keepLooping = True
         timer.start()
         tic = time.perf_counter()
         if self.options.alpha_beta:
@@ -903,8 +907,9 @@ class Game:
         else:
             (score, move) = self.minimax(self.options.max_depth, True)
         toc = time.perf_counter()
-        elapsed_seconds = (datetime.now() - start_time).total_seconds()
-        print(f"Search ran for {toc - tic:0.4f} seconds")
+        if keepLooping == False:
+            print("Search ended early, returned best current move")
+        elapsed_seconds = toc - tic
         timer.cancel()
         print("Cumulative Evals by depth: ", end ='')
         for i in range(self.options.max_depth):
@@ -921,7 +926,7 @@ class Game:
         total_evals = sum(self.stats.evaluations_per_depth.values())
         if self.stats.total_seconds > 0:
             print(f"Eval perf.: {total_evals/self.stats.total_seconds/1000:0.1f}k/s")
-        print(f"Elapsed time: {elapsed_seconds:0.1f}s")
+        print(f"Elapsed time: {elapsed_seconds:0.3f}s")
         return move
 
     def post_move_to_broker(self, move: CoordPair):
