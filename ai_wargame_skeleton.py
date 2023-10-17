@@ -236,6 +236,7 @@ class Options:
     max_time : float | None = 5.0
     game_type : GameType = GameType.AttackerVsDefender
     alpha_beta : bool = True
+    heuristic_Option : int | None = 3
     max_turns : int | None = 100
     randomize_moves : bool = True
     broker : str | None = None
@@ -664,11 +665,121 @@ class Game:
             e2 = (20*VP2_health + 10*TP2_health + 1*FP2_health + 1*PP2_health + 999*AIP2_health) - (20*VP1_health + 10*TP1_health + 1*FP1_health + 1*PP1_health + 999*AIP1_health)
         return e2
 
+    def e1_heuristic_protectAI(self) -> int:
+        """
+        Evaluate the protection level of all AI units.
+        This also takes into account the health of the other units that are protecting the AI units.
+        """
+        VP1, VP2 = 0, 0
+        TP1, TP2 = 0, 0
+        FP1, FP2 = 0, 0
+        PP1, PP2 = 0, 0
+        AIP1, AIP2 = 0, 0
+        
+        # Iterate through the game board to find the Attackers AI units
+        for (coord,unit) in self.player_units(Player.Attacker):
+            if unit.type == UnitType.Virus:
+                VP1 += 1
+            elif unit.type == UnitType.Tech:
+                TP1 += 1
+            elif unit.type == UnitType.Firewall:
+                FP1 += 1
+            elif unit.type == UnitType.Program:
+                PP1 += 1
+            elif unit.type == UnitType.AI:
+                AIP1 += 999*unit.get_health()
+                # Define the coordinates for adjacent cells
+                for unit_at_coord in coord.iter_adjacent():
+                    # If the unit is not None and belongs to the same player
+                    adj_unit = self.get(unit_at_coord)
+                    if adj_unit is not None and adj_unit.player == Player.Attacker:
+                        # Add the protection score based on the health of the unit
+                        if adj_unit.type == UnitType.Virus:
+                            VP1 += (100*adj_unit.get_health())
+                            AIP1 += (100*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Tech:
+                            TP1 += (100*adj_unit.get_health())
+                            AIP1 += (100*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Firewall:
+                            FP1 += (50*adj_unit.get_health())
+                            AIP1 += (50*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Program:
+                            PP1 += (50*adj_unit.get_health())
+                            AIP1 += (50*adj_unit.get_health())
+                    # If the unit is not None and belongs to the opponent player
+                    if adj_unit is not None and adj_unit.player == Player.Defender:
+                        # Subtract the protection score based on the health of the unit
+                        if adj_unit.type == UnitType.Virus:
+                            VP1 -= (50*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Tech:
+                            TP1 -= (50*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Firewall:
+                            FP1 -= (25*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Program:
+                            PP1 -= (25*adj_unit.get_health())
+                    if adj_unit is None:
+                        AIP1 -= (100*unit.get_health())
+        
+        # Iterate through the game board to find the Defenders AI units
+        for (coord,unit) in self.player_units(Player.Defender):
+            if unit.type == UnitType.Virus:
+                VP2 += 1
+            elif unit.type == UnitType.Tech:
+                TP2 += 1
+            elif unit.type == UnitType.Firewall:
+                FP2 += 1
+            elif unit.type == UnitType.Program:
+                PP2 += 1
+            elif unit.type == UnitType.AI:
+                AIP2 += 999*unit.get_health()
+                # Define the coordinates for adjacent cells
+                for unit_at_coord in coord.iter_adjacent():
+                    adj_unit = self.get(unit_at_coord)
+                    if adj_unit is not None and adj_unit.player == Player.Defender:
+                        # Add the protection score based on the health of the unit
+                        if adj_unit.type == UnitType.Virus:
+                            VP2 += (100*adj_unit.get_health())
+                            AIP2 += (100*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Tech:
+                            TP2 += (100*adj_unit.get_health())
+                            AIP2 += (100*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Firewall:
+                            FP2 += (50*adj_unit.get_health())
+                            AIP2 += (50*adj_unit.get_health())
+                        elif adj_unit.type == UnitType.Program:
+                            PP2 += (50*adj_unit.get_health())
+                            AIP2 += (50*adj_unit.get_health())
+                    # If the unit is not None and belongs to the opponent player
+                    if adj_unit is not None and adj_unit.player == Player.Attacker:
+                        # Subtract the protection score based on the health of the unit
+                        if adj_unit.type == UnitType.Virus:
+                            VP2 -= (50*adj_unit.get_health())
+                        if adj_unit.type == UnitType.Tech:
+                            TP2 -= (50*adj_unit.get_health())
+                        if adj_unit.type == UnitType.Firewall:
+                            FP2 -= (25*adj_unit.get_health())
+                        if adj_unit.type == UnitType.Program:
+                            PP2 -= (25*adj_unit.get_health())
+                    if adj_unit is None:
+                        AIP2 -= (100*unit.get_health())
 
+        #print("current AIP1: ", AIP1, ". current AIP2: ", AIP2)        
+        if self.next_player == Player.Attacker:
+            e1 = (VP1 + TP1 + FP1 + PP1 + AIP1) - (VP2 + TP2 + FP2 + PP2 + AIP2)
+        else:
+            e1 = (VP2 + TP2 + FP2 + PP2 + AIP2) - (VP1 + TP1 + FP1 + PP1 + AIP1) 
+        #print("E1: ", e1)
+        return e1
+    
     def minimax(self, depth: int, maximizing_player: bool) -> Tuple(int, CoordPair):
         global eval_states
         if depth == 0:
-            return self.e0_heuristic_eval(), None
+            if self.options.heuristic_Option == 2:
+                return self.e2_heuristic_eval(), None
+            elif self.options.heuristic_Option == 1:
+                return self.e1_heuristic_protectAI(), None
+            else:
+                return self.e0_heuristic_eval(), None
         
         #for timeout
         if keepLooping:
@@ -712,7 +823,14 @@ class Game:
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
         global eval_states
         if depth == 0:
-            return self.e2_heuristic_eval(), None
+
+            if self.options.heuristic_Option == 2:
+                return self.e2_heuristic_eval(), None
+            elif self.options.heuristic_Option == 1:
+                return self.e1_heuristic_protectAI(), None
+            else:
+                return self.e0_heuristic_eval(), None
+
         
         #for timeout
         if keepLooping:
@@ -941,7 +1059,21 @@ def main():
                 options.alpha_beta = False
                 break
             else:
-                print("Error: Please select 1 or 2\n")        
+                print("Error: Please select 1 or 2\n")   
+        while(1):
+            user_input = input("Please enter digit from the following options:\n- (0) e0 heuristic (default)\n- (1) e1 Protected AI heuristic\n- (2) e2 Health board heuristic\n")
+            user_choice = string_to_int(user_input)
+            if user_choice == 0:
+                Options.heuristic_Option = 0
+                break
+            elif user_choice == 1:
+                Options.heuristic_Option = 1
+                break
+            elif user_choice == 2:
+                Options.heuristic_Option = 2
+                break
+            else:
+                print("Error: Please select options 0 or 1 or 2\n")     
 
 
 
