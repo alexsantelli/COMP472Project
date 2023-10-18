@@ -771,6 +771,7 @@ class Game:
     
     def minimax(self, depth: int, maximizing_player: bool) -> Tuple(float, CoordPair):
         global eval_states
+        global total_nodes
         if depth == 0:
             if self.options.heuristic_Option == 2:
                 return self.e2_heuristic_eval(), None
@@ -783,8 +784,11 @@ class Game:
         if maximizing_player:
 
             max_eval = MIN_HEURISTIC_SCORE #setting minumum evaluation to minimum heuristic so next evalutation is best
+            total_nodes += 1
             #simulating moves to check which is best according to heuristic
+            #total_children = len(self.move_candidates())
             for move in self.move_candidates():
+                #total_children = len(self.move_candidates())
                 simulation_board = self.clone()
                 simulation_board.simulation = True
                 simulation_board.perform_move(move)
@@ -802,6 +806,7 @@ class Game:
             return max_eval, best_move
         else:
             min_eval = MAX_HEURISTIC_SCORE  #setting maximum evaluation to minimum heuristic so next evalutation is best
+            total_nodes += 1
             #simulating moves to check which is best according to heuristic
             for move in self.move_candidates():
                 simulation_board = self.clone()
@@ -822,6 +827,7 @@ class Game:
     
     def alphabeta(self, depth: int, alpha: float, beta: float, maximizing_player: bool) -> Tuple[float, CoordPair]:
         global eval_states
+        global total_nodes
         if depth == 0:
 
             if self.options.heuristic_Option == 2:
@@ -835,6 +841,7 @@ class Game:
         if maximizing_player:
 
             max_eval = MIN_HEURISTIC_SCORE #setting minumum evaluation to minimum heuristic so next evalutation is best
+            total_nodes += 1
             #simulating moves to check which is best according to heuristic
             for move in self.move_candidates():
                 simulation_board = self.clone()
@@ -858,6 +865,7 @@ class Game:
             return max_eval, best_move
         else:
             min_eval = MAX_HEURISTIC_SCORE #setting maximum evaluation to minimum heuristic so next evalutation is best
+            total_nodes += 1
             #simulating moves to check which is best according to heuristic
             for move in self.move_candidates():
                 simulation_board = self.clone()
@@ -911,22 +919,42 @@ class Game:
             print("Search ended early, returned best current move")
         elapsed_seconds = toc - tic
         timer.cancel()
-        print("Cumulative Evals by depth: ", end ='')
+        print("Cumulative evals by depth: ", end ='')
+        str(f'{eval_states:,}')
+        with open(FILENAME, 'a') as f:
+                f.write("Cumulative evals by depth: ")
         for i in range(self.options.max_depth):
-            print(str(i + 1) + "=" + str(evals_per_depth[i]), end = ' ')
+            print(str(i + 1) + "=" + f'{evals_per_depth[i]:,}', end = ' ')
+            with open(FILENAME, 'a') as f:
+                f.write(str(i + 1) + "=" + f'{evals_per_depth[i]:,}' + " ")
         print()
-        print("Cumulative% evals by", end = '')
+        with open(FILENAME, 'a') as f:
+                f.write("\n")
+        print("Cumulative % evals by depth ", end = '')
+        with open(FILENAME, 'a') as f:
+                f.write("Cumulative % evals by depth: ")
         for i in range(self.options.max_depth):
             print(str(i + 1) + f"= {(evals_per_depth[i]/eval_states)*100:0.1f}%", end = ' ')
+            with open(FILENAME, 'a') as f:
+                f.write(str(i + 1) + f"= {(evals_per_depth[i]/eval_states)*100:0.1f}%" + " ")
         print()
+        with open(FILENAME, 'a') as f:
+                f.write("\n")
+        print(f"Average branching factor = {eval_states/total_nodes:0.01f}")
+        with open(FILENAME, 'a') as f:
+                f.write(f"Average branching factor = {eval_states/total_nodes:0.01f}\n")
         self.stats.total_seconds += elapsed_seconds
         print(f"Heuristic score: {score}")
+        with open(FILENAME, 'a') as f:
+                f.write(f"Heuristic score: {score}\n")
         for k in sorted(self.stats.evaluations_per_depth.keys()):
             print(f"{k}:{self.stats.evaluations_per_depth[k]} ",end='')
         total_evals = sum(self.stats.evaluations_per_depth.values())
         if self.stats.total_seconds > 0:
             print(f"Eval perf.: {total_evals/self.stats.total_seconds/1000:0.1f}k/s")
         print(f"Elapsed time: {elapsed_seconds:0.3f}s")
+        with open(FILENAME, 'a') as f:
+                f.write(f"Elapsed time: {elapsed_seconds:0.3f}s\n")
         return move
 
     def post_move_to_broker(self, move: CoordPair):
@@ -999,6 +1027,8 @@ def main():
 
     global eval_states
     eval_states = 0
+    global total_nodes
+    total_nodes = 0
 
     # parse command line arguments
     parser = argparse.ArgumentParser(
