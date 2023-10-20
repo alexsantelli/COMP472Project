@@ -851,7 +851,6 @@ class Game:
                 evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
                 #Checking if timer is close to finished and returning best current move
                 if keepLooping == False:
-                    print("Search ended early, returned best current move")
                     break
                 eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, False)
                 #updating best update and best move
@@ -875,7 +874,6 @@ class Game:
                 evals_per_depth[self.options.max_depth - depth] += 1 #cumulative number of evaluation states counter at each depth
                 #Checking if timer is close to finished and returning best current move
                 if keepLooping == False:
-                    print("Search ended early, returned best current move")
                     break
                 eval, _ = simulation_board.alphabeta(depth - 1, alpha, beta, True)
                 #updating best update and best move
